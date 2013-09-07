@@ -55,18 +55,28 @@ Double_t NLL::GetVal(bool verify)
   
   m_logs.clear();
   m_logs.resize(OpenMP::GetMaxNumThreads());
+
   
   if (dynamic) {
 
     int nloops[OpenMP::GetMaxNumThreads()]={0,};
-    std::atomic<int> start(0);
+
+    std::atomic<int> istart[m_ngroups];
+    int iend[m_ngroups];
+    for (int ig=0; ig!=m_ngroups; ++ig) {
+      int ls=0;
+      Partitioner::GetElements(m_ngroups,ig,m_data->GetEntries(),ls,iend[ig]);
+      istart[ig]=ls;
+    }
+
+
   //int isOk=0;
 #pragma omp parallel 
   // reduction(+ : isOk)
     {
       
       // isOk = 
-      nloops[omp_get_thread_num()]  = RunEvaluationBlockSplittingDynamic(start);
+      nloops[omp_get_thread_num()]  = RunEvaluationBlockSplittingDynamic(istart, iend);
       
     }
     int k=0;
@@ -148,24 +158,28 @@ int NLL::RunEvaluationBlockSplittingStatic() {
   return 1;
 }
 
-int NLL::RunEvaluationBlockSplittingDynamic(std::atomic<int> & start) {
+int NLL::RunEvaluationBlockSplittingDynamic(std::atomic<int> * istart, int const * iend) {
 
-  int ntot = m_data->GetEntries();
   int chunk = 4*m_nBlockEvents;
-  int endgame = ntot -  omp_get_num_threads()*chunk;
+  int endgame = omp_get_num_threads()*chunk;
 
   int k = omp_get_thread_num();
+  int ig =  k/(omp_get_num_threads()/m_ngroups);
+  assert(ig<m_ngroups);
+  std::atomic<int> & start = istart[ig];
+  auto end = iend[ig];
+
   alignas(ALIGNMENT) double res[m_nBlockEvents];
   auto localValue = m_logs[k];  
 
   int lp=0;
   while (true) {
     int ls = start; 
-    if (ls>=ntot) break;
-    if (ls<endgame) chunk = 2*m_nBlockEvents;
+    if (ls>=end) break;
+    if ( (end-ls)<endgame) chunk = 2*m_nBlockEvents;
 
-    while (ls<ntot && !std::atomic_compare_exchange_weak(&start,&ls,ls+chunk)); 
-    auto ln = std::min(chunk,ntot-ls);
+    while (ls<end && !std::atomic_compare_exchange_weak(&start,&ls,ls+chunk)); 
+    auto ln = std::min(chunk,end-ls);
     if (ln<=0) break;
     lp++;
     for (int ie=0; ie<ln; ie+= m_nBlockEvents) {

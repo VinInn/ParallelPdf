@@ -32,7 +32,7 @@ class NLL : public Named {
 private:
 
   int RunEvaluationBlockSplittingStatic();
-  int RunEvaluationBlockSplittingDynamic(std::atomic<int> & start);
+  int RunEvaluationBlockSplittingDynamic(std::atomic<int> * istart, int const * iend);
 
 
   // Sequential vectorized reduction using IntLog
@@ -57,6 +57,7 @@ private:
 
 
   UInt_t m_nBlockEvents;
+  int m_ngroups=2;
   bool dynamic=false;
   bool docache=true;
  
