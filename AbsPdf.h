@@ -16,6 +16,10 @@ class AbsPdf : public Named {
   AbsPdf(const Char_t* name, const Char_t* title): Named(name,title){}
   virtual ~AbsPdf() {}
 
+
+  virtual void makeCache(unsigned int){}
+  virtual int verifyCache(){ return 0;}
+
   virtual void RandomizeFloatParameters();
   virtual void GetParameters(List<Variable>& parameters) { }
 

@@ -10,7 +10,7 @@
 
 template<typename T, int N>
 struct Add3Prod {
-
+  T operator()(T const *  __restrict__ const * v, T const * __restrict__ c, int i ) const { return (*c)*(*v)[i]*(*(v+1))[i]*(*(v+2))[i] + add(v+3,c+1,i); }
   T operator()(T const *  __restrict__ v, T const * __restrict__ c, int i, int stride ) const { return (*c)*(v)[i]*(v+stride)[i]*(v+2*stride)[i] + add(v+3*stride,c+1,i,stride); }
   Add3Prod<T,N-1> add;
   
@@ -18,7 +18,7 @@ struct Add3Prod {
 
 template<typename T>
 struct Add3Prod<T,2> {
-  
+  T operator()(T const *  __restrict__ const * v, T const * __restrict__ c, int i ) const { return (*c)*(*v)[i]*(*(v+1))[i]*(*(v+2))[i] + (*(c+1))*(*(v+3))[i]*(*(v+4))[i]*(*(v+5))[i]; }
   T operator()(T const * __restrict__ v, T const * __restrict__ c, int i, int stride ) const { return (*c)*(v)[i]*(v+stride)[i]*(v+2*stride)[i] + (*(c+1))*(v+3*stride)[i]*(v+4*stride)[i]*(v+5*stride)[i]; }
 };
 
@@ -45,6 +45,57 @@ public:
     
   }
   
+  void makeCache(unsigned int size) {
+    m_resCache = std::move(Data("","",size,m_pdfs.GetSize()));
+    makeParameterCache();
+  } 
+
+  void makeParameterCache() {
+    
+    // better this loop to be always the same...
+    // first me
+    for ( auto p : m_fractions()) m_parCache.push_back(p->GetVal());
+    for ( auto pdf : m_pdfs() ) { 
+      m_modPdfs.push_back(true);
+      m_parPdfs.push_back(m_parCache.size());
+      List<Variable> parameters;
+      pdf->GetParameters(parameters);
+      for (auto p : parameters()) m_parCache.push_back(p->GetVal());
+    }
+    m_parPdfs.push_back(m_parCache.size());
+    assert(m_parPdfs.size()==m_pdfs().size()+1);
+  }
+
+  int verifyCache() {
+    // assumption: minuit either change one param or all...
+    int n=0;
+    // here we should verify fractions....
+
+    int k=0; // m_parPdfs[0] start of param first pdf
+    for ( auto pdf : m_pdfs() ) {
+      m_modPdfs[k]=false;
+      List<Variable> parameters;
+      pdf->GetParameters(parameters);
+      int i = m_parPdfs[k];
+      for (auto p : parameters()) {
+	if (p->GetVal()!=m_parCache[i++]) { m_modPdfs[k]=true; ++n; break;}
+      }
+      ++k;
+    }
+    doNotCache= (n==1);
+    if (n>1) {  // resetCache
+      int k=0; // m_parPdfs[0] start of param first pdf
+      for ( auto pdf : m_pdfs() ) {
+	List<Variable> parameters;
+	pdf->GetParameters(parameters);
+	int i = m_parPdfs[k];
+	for (auto p : parameters()) m_parCache[i++]=p->GetVal();
+	++k;
+      }
+    }
+    return n;
+  }
+
   virtual ~PdfAdd3Prod () { }
     
   
@@ -53,7 +104,7 @@ public:
     parameters.AddElement(m_fractions);
     AbsPdf *pdf(0);
     List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
-    while ((pdf = iter_pdfs.Next())!=0) {
+    while ((pdf = iter_pdfs.Next())!=0) { 
       pdf->GetParameters(parameters);
     }
   }
@@ -79,6 +130,7 @@ private:
     res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
 
     auto strid = stride(bsize);
+    double * __restrict__ pres[3*N];
     alignas(ALIGNMENT) double lres[3*N][strid];
     double coeff[N];
 
@@ -94,12 +146,21 @@ private:
       lastFraction -= var->GetVal();
       coeff[k++]=  var->GetVal();
       for (int j=0; j!=3; ++j) {
-	pdf->GetVal(lres[l], bsize, data, dataOffset);
+	pres[l] = m_resCache.GetData(l,dataOffset);
+	if (m_modPdfs[l]) { 
+	  if (doNotCache) {
+	    pdf->GetVal(lres[l], bsize, data, dataOffset);
+	    pres[l] = &(lres[l][0]);
+	  } else {
+	    pdf->GetVal(pres[l], bsize, data, dataOffset);
+	  }
+	}
+
 	pdf = iter_pdfs.Next();
 	++l;
       }
     }
-
+    // this is extended...
     if (!m_isExtended) {
       coeff[k]=lastFraction;
       for (int j=0; j!=3; ++j) {
@@ -107,16 +168,18 @@ private:
 	++l;
       }
       assert(N==k+1);
-   } else 
+    } else 
       assert(N==k);
     assert(3*N==l);    
 
 
     Add3Prod<double,N> add;
     auto invIntegral = GetInvIntegral();
-    double const * kres = lres[0];
+    double const * __restrict__  const *  kres = pres;
+    // double const * kres = lres[0];
     for (auto idx = 0; idx!=bsize; ++idx) {
-      res[idx] = add(kres,coeff,idx,strid)*invIntegral;
+      // res[idx] = add(kres,coeff,idx,strid)*invIntegral;
+      res[idx] = add(kres,coeff,idx)*invIntegral;
     }
 
   }
@@ -145,8 +208,14 @@ private:
   mutable List<AbsPdf> m_pdfs;
   mutable List<Variable> m_fractions;
   
-  Bool_t m_isExtended;
+  std::vector<bool> m_modPdfs; // pdf to be called
+  std::vector<unsigned short> m_parPdfs; // index in vector below
+  std::vector<double> m_parCache; // cache of param (from  previous call)
 
+  mutable Data m_resCache;
+
+  Bool_t m_isExtended;
+  bool doNotCache=false;
  
 };
 

@@ -35,6 +35,8 @@ Variable::~Variable()
 
 Double_t Variable::SetVal(Double_t value)
 {
+  m_changed = (value!=m_value);
+  if (!m_changed) return value;
   if (value>=m_min && value<=m_max)
     m_value = value;
   else {

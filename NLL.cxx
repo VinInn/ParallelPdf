@@ -14,11 +14,11 @@ namespace global {
 #include <iostream>
 
 NLL::NLL(const Char_t* name, const Char_t* title, Data &data, AbsPdf &pdf,
-	 bool dyn): Named(name,title), m_data(&data), m_pdf(&pdf),  
-		    minLoop(OpenMP::GetMaxNumThreads(),1000000), 
-		    maxLoop(OpenMP::GetMaxNumThreads(),0), 
-		    aveLoop(OpenMP::GetMaxNumThreads(),0), 
-		    dynamic(dyn) {}
+	 bool dyn, bool idocache): Named(name,title), m_data(&data), m_pdf(&pdf),  
+				   minLoop(OpenMP::GetMaxNumThreads(),1000000), 
+				   maxLoop(OpenMP::GetMaxNumThreads(),0), 
+				   aveLoop(OpenMP::GetMaxNumThreads(),0), 
+				   dynamic(dyn), docache(idocache) {}
 
 NLL::~NLL() {
 
@@ -39,8 +39,10 @@ NLL::~NLL() {
 
 }
 
-Double_t NLL::GetVal()
+Double_t NLL::GetVal(bool verify)
 {
+
+  if (verify&&docache) m_pdf->verifyCache();
 
   static bool first=true;
   if (first) {
@@ -119,7 +121,8 @@ int NLL::RunEvaluationBlockSplittingStatic() {
   
   int iStart=0, iEnd=0;
   unsigned int ntot = OpenMP::GetThreadElements(m_data->GetEntries(),iStart,iEnd);
-  
+ 
+  /*
   static __thread int first(true);
   if (first) 
   {
@@ -130,7 +133,7 @@ int NLL::RunEvaluationBlockSplittingStatic() {
     std::cout << "thread " << OpenMP::GetRankThread() << " of " << OpenMP::GetNumThreads() << std::endl;
     std::cout <<  m_data->GetEntries() << " " << iStart << " " << iEnd << " " << ntot << std::endl;
   }
-  
+  */
 
   alignas(ALIGNMENT) double res[m_nBlockEvents];
   auto localValue = m_logs[OpenMP::GetRankThread()];  

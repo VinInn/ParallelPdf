@@ -40,7 +40,7 @@ class Variable : public Named {
 
  private:
   Bool_t m_isConstant;
-  
+  bool m_changed=true;
 };
 
 #endif

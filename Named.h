@@ -11,10 +11,12 @@
 class Named {
  public:
 
+  Named(){}
   Named(const char* name, const char* title);
   virtual ~Named() { }
 
   inline const char* GetName() const { return m_name.c_str(); }
+  inline const char* GetTitle() const { return m_title.c_str(); }
   
  private:
   std::string m_name;

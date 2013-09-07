@@ -37,7 +37,7 @@ std::string outputStatus(int status)
 
 double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data, 
 	     AbsPdf & model, bool runMinos,
-	     const char* label, bool dynamic)
+	     const char* label, bool dynamic, bool docache)
 {
   // Do the calculation
   std::cout << "Runs the algorithm with `" << label << "'" << std::endl;
@@ -46,7 +46,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
   assert(blockSize%8==0);
   // assert(blockSize<BLSIZE);
 
-  NLL nll("nll","",data,model,dynamic);
+  NLL nll("nll","",data,model,dynamic,docache);
   nll.SetBlockEventsSize(blockSize);
 
 #ifdef  DO_MINUIT
@@ -62,8 +62,28 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
   double start = Timer::Wtime();
 
   if (Iter>0) {
-    for (unsigned int i=0; i<Iter; i++)
+#ifndef  DO_MINUIT
+    // done in minimizer
+    nll.GetPdf()->makeCache(data.size());
+#endif
+    List<Variable> pdfPars;
+    nll.GetPdf()->GetParameters(pdfPars);
+    nll.GetVal(false); // init cache if needed
+    int ip=0;
+    for (unsigned int i=0; i<Iter; i++) {
+      if(ip==pdfPars().size()) ip=0;
+      while (pdfPars()[ip]->IsConstant()) { ++ip; if(ip==pdfPars().size()) ip=0;} // hope not all constants!
+      auto v = pdfPars()[ip]->GetVal();
+      auto e = pdfPars()[ip]->GetError();
+      pdfPars()[ip]->SetVal(v+e);
       value += nll.GetVal();
+
+      pdfPars()[ip]->SetVal(v-e);
+      value += nll.GetVal();
+      pdfPars()[ip]->SetVal(v);
+
+      ++ip;
+    }
   }
   else {
     model.RandomizeFloatParameters();
@@ -150,13 +170,12 @@ int main(int argc, char **argv)
     std::cout << "-h to see this help\n";
     std::cout << "-n <int> to set the number of events (100K by default)\n";
     std::cout << "-m to run minos (false by default)\n";
-    std::cout << "-e to run the external loop parallelization, only OpenMP (false by default)\n";
-    std::cout << "-i <int> to set the number of iterations (100 by default)\n";
-    std::cout << "-b <int> to set the number of events per block (default: 0 for OpenMP and Cilk, 1000 for TBB)\n";
+     std::cout << "-i <int> to set the number of iterations (0 by default)\n";
+    std::cout << "-b <int> to set the number of events per block (default: 0 for OpenMP and Cilk, 1024 for TBB)\n";
     //    std::cout << "-k to run on MIC, offload mode (false by default)\n";
     std::cout << "-a <int> to choose the algorithm to run: 0=OpenMP (default), 1=TBB, 2=Cilk\n";
-    std::cout << "-c to check the results against the virtual functions algorithm (false by default)\n";
     std::cout << "-d dynamic scheduling (false by default)\n";
+    std::cout << "-c use cache (false by default)\n";
 
     std::cout << std::endl;
     return 0;
@@ -168,8 +187,8 @@ int main(int argc, char **argv)
   unsigned int blockSize          = ReadIntOption(argc,argv,"-b",0);
   //  const bool useMIC               = (FindOption(argc,argv,"-k")>=0);
   const unsigned int algo         = ReadIntOption(argc,argv,"-a",0);
-  const bool useVirtualAlgo       = (FindOption(argc,argv,"-c")>=0);
   const bool dynamic              = (FindOption(argc,argv,"-d")>=0);
+  const bool docache              = (FindOption(argc,argv,"-c")>=0);
 
 
   const char* datafile = "data1M.dat";
@@ -234,7 +253,7 @@ int main(int argc, char **argv)
 
   // Do the calculation with OpenMP
   label = "OpenMP";
-  valueAlgo = DoNLL(Iter,blockSize,data,*model,runMinos,label.c_str(),dynamic);
+  valueAlgo = DoNLL(Iter,blockSize,data,*model,runMinos,label.c_str(),dynamic,docache);
 
   delete model;
 

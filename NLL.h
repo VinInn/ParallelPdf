@@ -15,17 +15,19 @@
 class NLL : public Named {
  public:
   NLL(const Char_t* name, const Char_t* title, Data &data, AbsPdf &pdf,
-      bool dyn);
+      bool dyn, bool idocache);
 
   ~NLL();  
 
-  Double_t GetVal();
+  Double_t GetVal(bool verify=true);
 
   inline AbsPdf *GetPdf() { return m_pdf; }
 
   inline void SetBlockEventsSize(UInt_t nBlockEvents) {
     m_nBlockEvents = nBlockEvents; 
   }
+
+  unsigned int dataSize() const { return m_data->size();}
 
 private:
 
@@ -56,6 +58,7 @@ private:
 
   UInt_t m_nBlockEvents;
   bool dynamic=false;
+  bool docache=true;
  
  
 };
