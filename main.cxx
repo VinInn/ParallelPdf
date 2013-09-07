@@ -16,9 +16,9 @@
 #include <sstream>
 #include "common.h"
 
-#include "models/extended1.h"
+// #include "models/extended1.h"
 #include "models/model.h"
-#include "models/gauss1.h"
+// #include "models/gauss1.h"
 
 #include "Timer.h"
 

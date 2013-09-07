@@ -1,4 +1,3 @@
-
 #ifndef PDFGAUSSIAN
 #define PDFGAUSSIAN
 
@@ -25,8 +24,17 @@ public:
  private:
   inline Double_t evaluateLocal(const Double_t x, const Double_t mu,
 				const Double_t sigma) const {
-    return TMath::Exp(-((Double_t)0.5)*TMath::Power((x-mu)/sigma,2));
+    auto arg = x-mu;
+    auto coeff = -0.5/(sigma*sigma);
+    return TMath::Exp(coeff*arg*arg);
   }
+
+  inline static Double_t evaluateLocalOpt(const Double_t x, const Double_t mu,
+                                const Double_t coeff) {
+    auto arg = x-mu;
+    return TMath::Exp(coeff*arg*arg);
+  }
+
   
  private:
   Variable *m_x;

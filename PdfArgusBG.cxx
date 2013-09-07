@@ -13,12 +13,12 @@ PdfArgusBG::PdfArgusBG(const Char_t* name, const Char_t* title, Variable &m,
 
 Double_t PdfArgusBG::evaluate() const
 {
-  return evaluateLocal(m_m->GetVal(),m_m0->GetVal(),m_c->GetVal());
+  return evaluateLocal(m_m->GetVal(),1./m_m0->GetVal(),m_c->GetVal());
 }
 
 Double_t PdfArgusBG::integral() const
 {
-  static const Double_t rootPi = TMath::Sqrt(TMath::Pi());
+  const Double_t rootPi = TMath::Sqrt(TMath::Pi());
   Double_t min = (m_m->GetMin() < m_m0->GetVal()) ? m_m->GetMin() : m_m0->GetVal();
   Double_t max = (m_m->GetMax() < m_m0->GetVal()) ? m_m->GetMax() : m_m0->GetVal();
   Double_t f1 = (1.-TMath::Power(min/m_m0->GetVal(),2));
@@ -36,7 +36,7 @@ Double_t PdfArgusBG::integral() const
 Bool_t PdfArgusBG::evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
 				const Double_t invIntegral)
 {
-  const Double_t *dataCPU = m_data->GetCPUData(*m_m);
+  const Data::Value_t *dataCPU = m_data->GetCPUData(*m_m);
   if (dataCPU==0)
     return kFALSE;
   
@@ -49,8 +49,9 @@ Bool_t PdfArgusBG::evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPart
 #pragma cilk grainsize = Cilk::grainsize
 #endif
 #pragma ivdep
+                 auto om0 = 1./m_m0->GetVal();
                  _Cilk_for (Int_t idx = (Int_t)iPartialStart; idx<(Int_t)iPartialEnd; idx++) {
-		   resultsCPU[idx] = evaluateLocal(dataCPU[idx],m_m0->GetVal(),m_c->GetVal())*invIntegral;
+		   resultsCPU[idx] = evaluateLocal(dataCPU[idx],om0,m_c->GetVal())*invIntegral;
 		 }
 		 );
   }
@@ -58,12 +59,13 @@ Bool_t PdfArgusBG::evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPart
 
 #ifndef USE_CEAN
 #pragma ivdep
+    auto om0 = 1./m_m0->GetVal();
     for (Int_t idx = (Int_t)iPartialStart; idx<(Int_t)iPartialEnd; idx++) {
-      resultsCPU[idx] = evaluateLocal(dataCPU[idx],m_m0->GetVal(),m_c->GetVal())*invIntegral;
+      resultsCPU[idx] = evaluateLocal(dataCPU[idx],om0,m_c->GetVal())*invIntegral;
     }
 #else
     resultsCPU[iPartialStart:iPartialEnd-iPartialStart] = evaluateLocal(dataCPU[iPartialStart:iPartialEnd-iPartialStart],
-									m_m0->GetVal(),m_c->GetVal())*invIntegral;
+									1./m_m0->GetVal(),m_c->GetVal())*invIntegral;
 #endif
   }  
 

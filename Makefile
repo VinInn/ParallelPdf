@@ -4,8 +4,8 @@
 #KNF=offload
 
 TBB=yes
-CEAN=yes
-CILK=yes
+#CEAN=yes
+#CILK=yes
 
 #MPI=mpiicpc
 #MPI=mpic++
@@ -13,16 +13,21 @@ CILK=yes
 
 DIR       = XEON
 
-BITS      = -m64
-CXXFLAGS  = -O2 $(BITS) -fPIC -funroll-loops -finline-functions
+#BITS      = -m64
+#CXXFLAGS  = -O2 $(BITS) -fPIC -funroll-loops -finline-functions
 #-fp-model precise -fp-model source -fimf-precision=high
 # -no-prec-div -fast-transcendentals
-#CXXFLAGS  = -O3 $(BITS) -fPIC -funroll-all-loops -finline-functions -ipo -no-prec-div -fast-transcendentals -xHost
+##CXXFLAGS  = -O3 $(BITS) -fPIC -funroll-all-loops -finline-functions -ipo -no-prec-div -fast-transcendentals -xHost
 # -debug all
 SOFLAGS  = -shared
 # Add Minuit2 directory
-INCLUDE  = -I../Minuit2/include/
-SOLIBS   = -L../Minuit2/lib -lMinuit2 -Wl,-rpath=./:../Minuit2/lib
+INCLUDE  = -I../Minuit2/include/ -I../ -I/home/vin/vdt/include
+SOLIBS   = -L../Minuit2/lib -lMinuit2 -Wl,-rpath=../Minuit2/lib
+
+# CXXFLAGS  = -O2 -fPIC  -march=core-avx2
+CXXFLAGS = -g -Ofast -fPIC  -march=core-avx2  -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11 -ftree-vectorizer-verbose=1 -Wall --param vect-max-version-for-alias-checks=100  -DWARNINGMSG $(OPTFLAGS)
+# -fipa-pta -fprefetch-loop-arrays
+
 
 ifdef KNF
 CXX       = icpc
@@ -32,8 +37,8 @@ CXXFLAGS += -mmic -no-fma
 #-fimf-accuracy-bits=22
 #:exp
 #CXXFLAGS += -no-vec
-INCLUDE  = -I./Minuit2/MIC/include/
-SOLIBS   = -L./Minuit2/MIC/lib -lMinuit2 -Wl,-rpath=./:./Minuit2/MIC/lib
+INCLUDE  = -I../Minuit2/MIC/include/
+SOLIBS   = -L../Minuit2/MIC/lib -lMinuit2 -Wl,-rpath=./:../Minuit2/MIC/lib
 DIR      = MIC
 else
 CXXFLAGS  += -offload-build -opt-report-phase:offload -offload-copts:"$(INCLUDE) -vec-report=3"
@@ -42,16 +47,8 @@ CXXFLAGS  += -offload-build -opt-report-phase:offload -offload-copts:"$(INCLUDE)
 endif
 else
 #CXX       = g++
-CXX       = icpc
+CXX       = c++
 # Vectorization
-#CXXFLAGS  += -msse3
-#CXXFLAGS  += -xSSE4.2
-CXXFLAGS  += -axAVX
-#CXXFLAGS  += -mavx
-#CXXFLAGS  += -xSSE4.2 -fp-model extended -fimf-precision=high
-#CXXFLAGS   += -mia32
-#CXXFLAGS  += -no-vec
-#CXXFLAGS  += -guide-vec
 LDFLAGS   = -ldl
 endif
 
@@ -64,7 +61,6 @@ ifeq ($(CXX),icpc)
 CXXFLAGS  += -ip -vec-report1 
 #-mkl=sequential
 #-g -openmp-link dynamic
-CXXWARN    = -w1 -Wall -wd654
 OPENMP     = -openmp -openmp-report2
 #CXXFLAGS  += -ansi-alias
 #LDFLAGS   += -L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm
@@ -80,7 +76,7 @@ CXXFLAGS  += -DUSE_CILK
 #-cilk-serialize
 endif
 else
-CXXFLAGS  += -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=1
+CXXFLAGS  += -ftree-vectorizer-verbose=1
 endif
 
 ifdef MPI
@@ -125,7 +121,7 @@ $(LIB): $(OBJLIST)
 
 $(MAIN)_$(DIR): $(MAIN).cxx $(LIB) models/*.h
 	@echo "Making executable..."
-	$(CXX) $(CXXFLAGS) $(CXXWARN) $(OPENMP) $(ROOTINC) $(INCLUDE) $(ROOTLIB) $(SOLIBS) $< $(LIB) -o $@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(CXXWARN) $(OPENMP) $(ROOTINC) $(INCLUDE) $(ROOTLIB) $(SOLIBS) $< ./$(LIB) -o $@ $(LDFLAGS)
 
 valgrind:
 	valgrind --tool=callgrind --simulate-cache=yes --collect-jumps=yes --separate-threads=yes --simulate-hwpref=yes --cacheuse=yes ./main -n 100000

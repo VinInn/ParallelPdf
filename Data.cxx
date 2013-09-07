@@ -1,5 +1,5 @@
-
 #include "Data.h"
+#include<malloc.h>
 
 Data::Data(const Char_t* name, const Char_t* title, UInt_t size,
 	   Variable &var1) :
@@ -51,7 +51,7 @@ Bool_t Data::Get(UInt_t iEvent)
   if ((iEvent+1)*m_vars.GetSize()>m_data.size())
     return kFALSE;
 
-  VectorSTD(Double_t)::iterator iter = m_data.begin()+iEvent*m_vars.GetSize();
+  VectorSTD(Value_t)::iterator iter = m_data.begin()+iEvent*m_vars.GetSize();
   m_vars.ResetIterator();
   while (Variable *var = m_vars.Next()) {
     var->SetVal(*iter);
@@ -67,13 +67,13 @@ Bool_t Data::DoVectors(bool force)
   // Something to do (possible cache misses)
 
 
-  if (m_dataCPU.size() && !force)
-    return kFALSE;
+  // if (m_dataCPU && !force)
+  //  return kFALSE;
   
-  m_dataCPU.resize(m_data.size());
-  VectorSTD(Double_t)::iterator iter = m_data.begin();
-  VectorSTD(Double_t)::iterator iterCPU = m_dataCPU.begin();
-  
+  VectorSTD(Value_t)::iterator iter = m_data.begin();
+  m_dataCPU = (Value_t *)__builtin_assume_aligned(memalign(32,m_data.size()*sizeof(Value_t)),32);
+  Value_t * iterCPU=m_dataCPU;  
+
   UInt_t iVar(0);
   UInt_t nVars = m_vars.GetSize();
   UInt_t nEvents = GetEntries();
@@ -85,31 +85,13 @@ Bool_t Data::DoVectors(bool force)
     }
     ++iterCPU;
   }
+
   
   return kTRUE;
 
 }
 
-const Double_t *Data::GetCPUData(const Variable &var) const
-{
-  Int_t index = m_vars.Index(var);
-  
-  if (index<0) {
-    std::cerr << "Data for variable " << var.GetName() << " are not in the data sample " << GetName() << "!!!" << std::endl;
-    return 0;
-  }
-  
-  if (!IsVectorized()) {
-    std::cerr << "Data for variable " << var.GetName() << " of data sample " << GetName() << " are vectorized!!!" << std::endl;
-    return 0;
-  }
-  
-  return &(m_dataCPU[index*GetEntries()]);
-  
-}
-
-
 Data::~Data()
-{
+{ free(m_dataCPU); 
 }
 

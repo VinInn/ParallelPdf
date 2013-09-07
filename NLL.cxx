@@ -24,6 +24,14 @@ NLL::~NLL()
 
 }
 
+ // Sequential reduction using Knuth for events of a single thread
+void NLL::PartialNegReduction(TMath::IntLog &value,
+                                  const Double_t *pResults,
+                                  UInt_t iEnd, UInt_t iStart)  {
+    value = IntLogAccumulate(value, pResults+iStart, iEnd-iStart);
+
+}  
+
 Double_t NLL::GetVal()
 {
   Bool_t doVirtualAlgo(kTRUE);
@@ -39,6 +47,9 @@ Double_t NLL::GetVal()
     if (m_parallelReduction==NLL::kParallel && m_doCalculationBy==AbsPdf::kOpenMP) {
       m_sums.resize(OpenMP::GetMaxNumThreads());
       m_sums.assign(OpenMP::GetMaxNumThreads(),m_zeroValueAndError);
+      m_logs.clear();
+      m_logs.resize(OpenMP::GetMaxNumThreads());
+
     }
     
     // Use block splitting only in case of OpenMP
@@ -89,7 +100,8 @@ Double_t NLL::GetVal()
 	if (m_parallelReduction==NLL::kParallel) {
 	  // Cilk_for already runs the parallel reduction
 	  if (m_doCalculationBy!=AbsPdf::kCilk_for) {
-	    // Finalizing parallel reduction (using Double-Double)
+	    //final reduction
+            for (unsigned int i=0; i!=m_logs.size(); ++i) m_sums[i].value=-0.693147182464599609375*m_logs[i].value();
 	    m_result = TMath::DoubleDoubleAccumulation(m_sums);
 	  }
 	}
@@ -137,7 +149,7 @@ const Results *NLL::RunEvaluationBlockSplitting()
   UInt_t iBlockStart(0);
   
   while (1) {
-    results = &(m_pdf->GetLogValSIMD(iBlockStart,m_nBlockEvents));
+    results = &(m_pdf->GetValSIMD(iBlockStart,m_nBlockEvents));
 
     if (RunParallelReduction(results,iBlockStart))
       break;
@@ -246,9 +258,9 @@ Bool_t NLL::RunParallelReductionOpenMP(const Results *results, UInt_t iStart)
   // Parallel reduction (thread by thread) using Knuth
   UInt_t nEvents, iEnd;
   const Double_t *pResults = results->GetData(nEvents,iEnd,iStart,m_nBlockEvents);
-  TMath::ValueAndError_t localValue(m_sums[OpenMP::GetRankThread()]);  
+  auto localValue = m_logs[OpenMP::GetRankThread()];  
   PartialNegReduction(localValue,pResults,iEnd,iStart);
-  m_sums[OpenMP::GetRankThread()] = localValue;
+  m_logs[OpenMP::GetRankThread()] = localValue;
 
   // Set the condition when all elements are analyzed
   return (iEnd==nEvents);

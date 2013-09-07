@@ -1,7 +1,47 @@
 #include "TMath.h"
 
+namespace TMath {
+ ValueAndError_t DoubleDoubleAccumulation(const std::vector<ValueAndError_t> &values)
+ {
+#ifdef __INTEL_COMPILER
+#pragma float_control(precise,on)
+#endif
+    {
+      ValueAndError_t result;
+      result.error=0;
+      __float128 ss=0.;
+      for (auto v : values) ss+=v.value;
+      result.value = ss;
+      /*
+      std::vector<ValueAndError_t>::const_iterator iterValues = values.begin();
+
+
+      if (iterValues!=values.end()) {
+        result = *(iterValues);
+        Double_t t1(0); // s
+        Double_t t2(0); // t
+
+        for (iterValues++; iterValues!=values.end(); ++iterValues) {
+          t1 = KnuthSummation(result.value,iterValues->value,t2);
+          t2 += (result.error+iterValues->error);
+
+          result.value = t1+t2;
+          result.error = t2-(result.value-t1);
+        }
+      }
+      */
+      return result;
+    }
+
+  }
+
+}
+
+
 namespace ROOT {
   namespace Math {
+
+
     double landau_quantile(double z, double xi) {
       // LANDAU quantile : algorithm from CERNLIB G110 ranlan
       // with scale parameter xi

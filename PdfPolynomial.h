@@ -1,4 +1,3 @@
-
 #ifndef PDFPOLYNOMIAL
 #define PDFPOLYNOMIAL
 
@@ -8,24 +7,120 @@
 
 #include "tbb.h"
 
+
+#include<algorithm>
+
+template<typename T, int N>
+class HornerPoly {
+public:
+  HornerPoly(){}
+  HornerPoly(std::initializer_list<T> il) : p(std::begin(il)+1), c0(*il.begin()){}
+  HornerPoly(T const coeff[N+1]) : p(coeff+1), c0(*(coeff)){};
+  T operator()(T x) const { return c0 + x*p(x); }
+private:
+  HornerPoly<T,N-1> p;
+  T c0; 
+};
+
+template<typename T>
+class HornerPoly<T,0> {
+public:
+  HornerPoly(){}
+  HornerPoly(T coeff) : c0(coeff){};
+  HornerPoly(T const * coeff) : c0(*coeff){};
+  T operator()(T) const { return c0; }
+private:
+  T c0; 
+};
+
+
 #define RooPolynomial PdfPolynomial
 
+
+template<int N>
 class PdfPolynomial : public AbsPdf {
 public:
-  PdfPolynomial(const Char_t* name, const Char_t* title, const Variable &x);
+  using Poly = HornerPoly<double, N>;  // N is the number of coefficient, not the order, still below one adds one...
+  
+  PdfPolynomial(const Char_t* name, const Char_t* title, const Variable &x)  : AbsPdf(name,title), m_x(&x) {}
+  
   PdfPolynomial(const Char_t* name, const Char_t* title, const Variable &x,
-		List<Variable> coeff);
-  virtual ~PdfPolynomial();
-
+		List<Variable> coeff) :
+    AbsPdf(name,title), m_x(&x)
+  {
+    m_coeff.AddElement(coeff);
+    assert(m_coeff.GetSize()==N);
+  }
+  
+  virtual ~PdfPolynomial(){}
+  
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(m_coeff); }
-  static void SetBlockSize(Int_t blockSize) { m_blockSize = blockSize; }
-
- protected:
-  virtual Double_t evaluate() const;
-  virtual Double_t integral() const;
+  static void SetBlockSize(Int_t blockSize) {  }
+  
+protected:
+  virtual Double_t evaluate() const
+  {
+    UInt_t size = m_coeff.GetSize();
+    Double_t coeffCPU[size+1];
+    loadCoeff(coeffCPU,size);
+    return evaluateLocal(m_x->GetVal(),coeffCPU,size);
+  }
+  
+  virtual Double_t integral() const
+  {
+    UInt_t order = m_coeff.GetSize();
+    Double_t xmaxprod = m_x->GetMax();
+    Double_t xminprod = m_x->GetMin();
+    Double_t sum = xmaxprod-xminprod;
+    for (UInt_t i = 0; i < order; i++) {
+      xmaxprod *= m_x->GetMax();
+      xminprod *= m_x->GetMin();
+      sum += m_coeff.GetElement(i)->GetVal()*(xmaxprod - xminprod)/(i+2);
+    }
+    return sum;
+    
+  }
+  
+  
+  
   
   virtual Bool_t evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
-			      const Double_t invIntegral);
+			      const Double_t invIntegral) {
+    
+    const Data::Value_t  *__restrict__ dataCPU = m_data->GetCPUData(*m_x);
+    dataCPU = (const Data::Value_t *)__builtin_assume_aligned (dataCPU, 32, 0);
+
+    if (dataCPU==0)
+      return kFALSE;
+    
+    Int_t size = m_coeff.GetSize();
+    Double_t coeffCPU[size+1];
+    loadCoeff(coeffCPU,size);
+    assert(m_coeff.GetSize()==N);
+    
+   Poly poly(coeffCPU);
+  
+   UInt_t iPartialEnd(0);
+   Double_t* __restrict__ resultsCPU = GetDataResultsCPUThread(dataCPU,iPartialEnd,iPartialStart,nPartialEvents);
+   resultsCPU = (Double_t *)__builtin_assume_aligned (resultsCPU, 32, 0);
+  
+
+  int is = iPartialStart; int ie = iPartialEnd;
+  double iI = invIntegral; 
+  for (auto idx = is; idx<ie; ++idx) {
+    auto x = dataCPU[idx];
+    auto y = poly(x)*iI;
+    resultsCPU[idx] = y;
+
+  }
+  
+  
+  return kTRUE;
+}
+
+  
+  
+
 
  private:
 
@@ -57,7 +152,8 @@ public:
  private:
   const Variable *m_x;
   List<Variable> m_coeff;
-  static Int_t m_blockSize;
+  // static Int_t m_blockSize;
 };
 
 #endif
+

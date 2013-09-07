@@ -161,6 +161,7 @@ const Results &AbsPdf::GetValSIMD(UInt_t iStart, UInt_t nPartialEvents)
       isOK = kTRUE;
 #pragma omp parallel reduction(&& : isOK)
       {
+        // std::cout << "eval " << iStart << " " <<  nPartialEvents << " " << 1./GetIntegral() << std::endl;
 	isOK = evaluateSIMD(iStart,nPartialEvents,1./GetIntegral());
       }
     }

@@ -24,14 +24,14 @@ public:
 			      const Double_t invIntegral);
   
  private:
-  inline Double_t evaluateLocal(const Double_t m, const Double_t m0,
+  inline Double_t evaluateLocal(const Double_t m, const Double_t om0,
 				const Double_t c) const {
 
-    Double_t t= m/m0;
-    if(t >= 1.) return 0;
+    Double_t t= m*om0;
 
     Double_t u= ((Double_t)1.) - t*t;
     
+    // return (t >= 1.) ? 0. :  m*TMath::Sqrt(u)*TMath::Exp(c*u) ;
     return m*TMath::Sqrt(u)*TMath::Exp(c*u) ;
   }
 

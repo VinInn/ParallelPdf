@@ -1,10 +1,10 @@
-
 // Data analysis of branching fraction measurement of eta'(rg) K0S (PhysRevD.80.112002)
 
 #include "Variable.h"
 #include "PdfGaussian.h"
 #include "PdfProd.h"
 #include "PdfAdd.h"
+#include "PdfAdd3Prod.h"
 #include "PdfBreitWigner.h"
 #include "PdfPolynomial.h"
 #include "PdfBifurGaussian.h"
@@ -22,7 +22,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
 
   RooRealVar *coeff1B1x = new RooRealVar("coeff1B1x","",-0.3156,-1,1); coeff1B1x->setError(0.001); // coeff1B1x->setConstant();
   List<Variable> coefficientsB1x(*coeff1B1x);
-  RooAbsPdf *polyB1x = new RooPolynomial("polyB1x","",x,coefficientsB1x);
+  RooAbsPdf *polyB1x = new RooPolynomial<1>("polyB1x","",x,coefficientsB1x);
 
   RooRealVar *coeff1C1x = new RooRealVar("coeff1C1x","",-0.7728);
   RooRealVar *coeff2C1x = new RooRealVar("coeff2C1x","",0.0067);
@@ -33,16 +33,16 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   coefficientsC1x.add(*coeff2C1x);
   coefficientsC1x.add(*coeff3C1x);
   coefficientsC1x.add(*coeff4C1x);
-  RooAbsPdf *polyC1x = new RooPolynomial("polyC1x","",x,coefficientsC1x);
+  RooAbsPdf *polyC1x = new RooPolynomial<4>("polyC1x","",x,coefficientsC1x);
 
   RooRealVar *muD1x = new RooRealVar("muD1x","",0.1115);
   RooRealVar *sigmaD1x = new RooRealVar("sigmaD1x","",0.0464);
   RooAbsPdf *gaussD1x = new RooGaussian("gaussD1x","",x,*muD1x,*sigmaD1x);
   RooRealVar *coeff1D2x = new RooRealVar("coeff1D2x","",0.4146);
   List<Variable> coefficientsD2x(*coeff1D2x);
-  RooAbsPdf *polyD2x = new RooPolynomial("polyD2x","",x,coefficientsD2x);
+  RooAbsPdf *polyD2x = new RooPolynomial<1>("polyD2x","",x,coefficientsD2x);
   RooRealVar *fracDx = new RooRealVar("fracDx","",0.3821);
-  RooAbsPdf *addDx = new RooAddPdf("addDx","",*gaussD1x,*polyD2x,*fracDx);
+  RooAbsPdf *addDx = new RooAddPdf<2>("addDx","",*gaussD1x,*polyD2x,*fracDx);
 
   RooRealVar *coeff1E1x = new RooRealVar("coeff1E1x","",-0.9392);
   RooRealVar *coeff2E1x = new RooRealVar("coeff2E1x","",-0.0793);
@@ -53,7 +53,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   coefficientsE1x.add(*coeff2E1x);
   coefficientsE1x.add(*coeff3E1x);
   coefficientsE1x.add(*coeff4E1x);
-  RooAbsPdf *polyE1x = new RooPolynomial("polyE1x","",x,coefficientsE1x);
+  RooAbsPdf *polyE1x = new RooPolynomial<4>("polyE1x","",x,coefficientsE1x);
 
   // Var y
 
@@ -72,7 +72,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   RooRealVar *sigmaC2y = new RooRealVar("sigmaC2y","",0.0041); 
   RooAbsPdf *gaussC2y = new RooGaussian("gaussC2y","",y,*muC2y,*sigmaC2y);
   RooRealVar *fracCy = new RooRealVar("fracCy","",0.8576);
-  RooAbsPdf *addCy = new RooAddPdf("addCy","",*argusC1y,*gaussC2y,*fracCy);
+  RooAbsPdf *addCy = new RooAddPdf<2>("addCy","",*argusC1y,*gaussC2y,*fracCy);
 
   RooRealVar *muD1y = new RooRealVar("muD1y","",5.2785);
   RooRealVar *sigmaD1y = new RooRealVar("sigmaD1y","",0.0054);
@@ -85,7 +85,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   RooRealVar *sigmaE2y = new RooRealVar("sigmaE2y","",0.0050);
   RooAbsPdf *gaussE2y = new RooGaussian("gaussE2y","",y,*muE2y,*sigmaE2y);
   RooRealVar *fracEy = new RooRealVar("fracEy","",0.6793);
-  RooAbsPdf *addEy = new RooAddPdf("addEy","",*argusE1y,*gaussE2y,*fracEy);
+  RooAbsPdf *addEy = new RooAddPdf<2>("addEy","",*argusE1y,*gaussE2y,*fracEy);
   
   // Var z
 
@@ -97,9 +97,9 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   RooRealVar *sigmaLB1z = new RooRealVar("sigmaLB1z","",0.3321,0,1); sigmaLB1z->setError(0.001);
   RooRealVar *sigmaRB1z = new RooRealVar("sigmaRB1z","",0.4441,0,1); sigmaRB1z->setError(0.001);
   RooAbsPdf *bifurgaussB1z = new RooBifurGauss("bifurgaussB1z","",z,*muB1z,*sigmaLB1z,*sigmaRB1z);
-  RooAbsPdf *polyB1z = new RooPolynomial("polyB1z","",z);
+  RooAbsPdf *polyB1z = new RooPolynomial<0>("polyB1z","",z);
   RooRealVar *fracBz = new RooRealVar("fracBz","",0.99);
-  RooAbsPdf *addBz = new RooAddPdf("addBz","",*bifurgaussB1z,*polyB1z,*fracBz);
+  RooAbsPdf *addBz = new RooAddPdf<2>("addBz","",*bifurgaussB1z,*polyB1z,*fracBz);
 
   RooRealVar *muC1z = new RooRealVar("muC1z","",-0.6762); 
   RooRealVar *sigmaLC1z = new RooRealVar("sigmaLC1z","",0.3241);
@@ -125,15 +125,25 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   List<Variable> nevents;
   nevents.add(*nA); nevents.add(*nB); nevents.add(*nC); nevents.add(*nD); nevents.add(*nE);
 
-  RooAbsPdf *pdfA = new RooProdPdf("pdfA","",List<AbsPdf>(*gaussA1x,*gaussA1y,*gaussA1z));
-  RooAbsPdf *pdfB = new RooProdPdf("pdfB","",List<AbsPdf>(*polyB1x,*argusB1y,*addBz));
-  RooAbsPdf *pdfC = new RooProdPdf("pdfC","",List<AbsPdf>(*polyC1x,*addCy,*bifurgaussC1z));
-  RooAbsPdf *pdfD = new RooProdPdf("pdfD","",List<AbsPdf>(*addDx,*gaussD1y,*bifurgaussD1z));
-  RooAbsPdf *pdfE = new RooProdPdf("pdfE","",List<AbsPdf>(*polyE1x,*addEy,*bifurgaussE1z));
+  /*
+  RooAbsPdf *pdfA = new RooProdPdf<3>("pdfA","",List<AbsPdf>(*gaussA1x,*gaussA1y,*gaussA1z));
+  RooAbsPdf *pdfB = new RooProdPdf<3>("pdfB","",List<AbsPdf>(*polyB1x,*argusB1y,*addBz));
+  RooAbsPdf *pdfC = new RooProdPdf<3>("pdfC","",List<AbsPdf>(*polyC1x,*addCy,*bifurgaussC1z));
+  RooAbsPdf *pdfD = new RooProdPdf<3>("pdfD","",List<AbsPdf>(*addDx,*gaussD1y,*bifurgaussD1z));
+  RooAbsPdf *pdfE = new RooProdPdf<3>("pdfE","",List<AbsPdf>(*polyE1x,*addEy,*bifurgaussE1z));
   List<AbsPdf> Pdfs;
   Pdfs.add(*pdfA); Pdfs.add(*pdfB); Pdfs.add(*pdfC); Pdfs.add(*pdfD); Pdfs.add(*pdfE);
   
-  return new RooAddPdf("extended","",Pdfs,nevents);
+  return new RooAddPdf<5>("extended","",Pdfs,nevents);
+  */
+  List<AbsPdf> Pdfs;
+  Pdfs.add(*gaussA1x); Pdfs.add(*gaussA1y ); Pdfs.add(*gaussA1z);
+  Pdfs.add(*polyB1x); Pdfs.add(*argusB1y); Pdfs.add(*addBz);
+  Pdfs.add(*polyC1x); Pdfs.add(*addCy); Pdfs.add(*bifurgaussC1z);
+  Pdfs.add(*addDx ); Pdfs.add(*gaussD1y); Pdfs.add(*bifurgaussD1z);
+  Pdfs.add(*polyE1x); Pdfs.add(*addEy); Pdfs.add(*bifurgaussE1z);
+  return new PdfAdd3Prod<5>("extended","",Pdfs,nevents);
+
   //  return pdfE;
   //  return argusB1y;
   //  return bifurgaussE1z;

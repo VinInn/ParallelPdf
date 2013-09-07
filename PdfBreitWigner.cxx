@@ -27,7 +27,7 @@ Double_t PdfBreitWigner::integral() const
 Bool_t PdfBreitWigner::evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
 				    const Double_t invIntegral)
 {
-  const Double_t *dataCPU = m_data->GetCPUData(*m_x);
+  const Data::Value_t *dataCPU = m_data->GetCPUData(*m_x);
   if (dataCPU==0)
     return kFALSE;
   

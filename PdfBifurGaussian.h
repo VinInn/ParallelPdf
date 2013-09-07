@@ -31,6 +31,9 @@ class PdfBifurGaussian : public AbsPdf {
     Double_t arg = x - mu;
     Double_t coef = 0.0;
     
+    coef = (arg<0) ? -((Double_t)0.5)/(sigmaL*sigmaL) : -((Double_t)0.5)/(sigmaR*sigmaR);
+
+    /*
     if (arg < coef) {
       if (TMath::Abs(sigmaL)>1e-30) {
         coef = -((Double_t)0.5)/(sigmaL*sigmaL);
@@ -40,9 +43,22 @@ class PdfBifurGaussian : public AbsPdf {
         coef = -((Double_t)0.5)/(sigmaR*sigmaR);
       }
     }
-    
+    */    
+
     return TMath::Exp(coef*arg*arg);
   }
+
+
+ inline static Double_t evaluateLocalOpt(const Double_t x, const Double_t mu,
+                                const Double_t coeffL, const Double_t coeffR) {
+
+   Double_t arg = x - mu;
+   Double_t coef = (arg<0) ? coeffL : coeffR;
+
+   return TMath::Exp(coef*arg*arg);
+  }
+
+
 
  private:
   Variable *m_x;

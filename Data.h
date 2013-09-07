@@ -1,4 +1,3 @@
-
 #ifndef DATA
 #define DATA
 
@@ -15,6 +14,9 @@
 
 class Data : public Named {
  public:
+  using Value_t = double;
+  // using Value_t = float;
+
   Data(const Char_t* name, const Char_t* title, UInt_t size, Variable &var1);
   Data(const Char_t* name, const Char_t* title, UInt_t size, Variable &var1, Variable &var2);
   Data(const Char_t* name, const Char_t* title, UInt_t size, Variable &var1, Variable &var2, Variable &var3);
@@ -27,15 +29,33 @@ class Data : public Named {
   Bool_t Get(UInt_t iEvent);
 
   Bool_t DoVectors(bool force = false);
-  inline Bool_t IsVectorized() const { return m_dataCPU.size()>0; }
-  const Double_t *GetCPUData(const Variable &var) const;
+  inline Bool_t IsVectorized() const { return m_dataCPU!=nullptr; }
+  const Value_t *GetCPUData(const Variable &var) const {
+
+    auto index = m_vars.Index(var);
+    /*
+    if (index<0) {
+      std::cerr << "Data for variable " << var.GetName() << " are not in the data sample " << GetName() << "!!!" << std::endl;
+      return 0;
+    }  
+
+   if (!IsVectorized()) {
+      std::cerr << "Data for variable " << var.GetName() << " of data sample " << GetName() << " are vectorized!!!" << std::endl;
+     return 0;
+   }
+   */
+   return (Value_t *)__builtin_assume_aligned(&m_dataCPU[index*GetEntries()],32); //  need to be protected for GetEntries()%8!=0
+   // return &(m_dataCPU[index*GetEntries()]);
+
+  }
+
   
  private:
   List<Variable> m_vars;
   
-  VectorSTD(Double_t) m_data; // matrix container
+  VectorSTD(Value_t) m_data; // matrix container
 
-  VectorSTD(Double_t) m_dataCPU; //!
+  Value_t * m_dataCPU=nullptr; //!
 
 };
 

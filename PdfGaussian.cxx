@@ -17,8 +17,8 @@ Double_t PdfGaussian::evaluate() const
 
 Double_t PdfGaussian::integral() const
 {
-  static const Double_t root2 = TMath::Sqrt2() ;
-  static const Double_t rootPiBy2 = TMath::Sqrt(TMath::PiOver2());
+  const Double_t root2 = TMath::Sqrt2() ;
+  const Double_t rootPiBy2 = TMath::Sqrt(TMath::PiOver2());
   Double_t invxscale = 1./(root2*m_sigma->GetVal());
   Double_t ret = rootPiBy2*m_sigma->GetVal()*
     (TMath::Erf((m_x->GetMax()-m_mu->GetVal())*invxscale)-
@@ -31,12 +31,15 @@ Double_t PdfGaussian::integral() const
 Bool_t PdfGaussian::evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
 				 const Double_t invIntegral)
 {
-  const Double_t *dataCPU = m_data->GetCPUData(*m_x);
+  const Data::Value_t  *__restrict__ dataCPU = m_data->GetCPUData(*m_x);
+  dataCPU = (const Data::Value_t *)__builtin_assume_aligned (dataCPU, 32, 0);
   if (dataCPU==0)
     return kFALSE;
 
   UInt_t iPartialEnd(0);
-  Double_t* resultsCPU = GetDataResultsCPUThread(dataCPU,iPartialEnd,iPartialStart,nPartialEvents);
+  Double_t* __restrict__ resultsCPU = GetDataResultsCPUThread(dataCPU,iPartialEnd,iPartialStart,nPartialEvents);
+  resultsCPU = (Double_t *)__builtin_assume_aligned (resultsCPU, 32, 0);
+
 
   if (m_doCalculationBy==kCilk_for) {
     CilkSafeCall(
@@ -53,8 +56,9 @@ Bool_t PdfGaussian::evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPar
 
 #ifndef USE_CEAN
 #pragma ivdep
+    auto coeff = -0.5/(m_sigma->GetVal()*m_sigma->GetVal());
     for (Int_t idx = (Int_t)iPartialStart; idx<(Int_t)iPartialEnd; idx++) {
-      resultsCPU[idx] = evaluateLocal(dataCPU[idx],m_mu->GetVal(),m_sigma->GetVal())*invIntegral;
+      resultsCPU[idx] = evaluateLocalOpt(dataCPU[idx],m_mu->GetVal(),coeff)*invIntegral;
     }
 #else
     resultsCPU[iPartialStart:iPartialEnd-iPartialStart] = evaluateLocal(dataCPU[iPartialStart:iPartialEnd-iPartialStart],

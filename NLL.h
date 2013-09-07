@@ -19,16 +19,13 @@ class NLL : public Named {
   
   Double_t GetVal();
   inline AbsPdf *GetPdf() { return m_pdf; }
+
   inline void SetBlockEventsSize(UInt_t nBlockEvents) { m_nBlockEvents = nBlockEvents; }
 
   // Sequential reduction using Knuth for events of a single thread
-  inline void PartialNegReduction(TMath::ValueAndError_t &value,
+  static void PartialNegReduction(TMath::IntLog &value,
 				  const Double_t *pResults,
-				  UInt_t iEnd, UInt_t iStart = 0) const {
-    for (Int_t idx = (Int_t)iStart; idx<(Int_t)iEnd; idx++) {
-      TMath::KnuthAccumulationSub(value.value,value.error,pResults[idx]);
-    }
-  }
+				  UInt_t iEnd, UInt_t iStart = 0); // __attribute__((optimize("O2")));
 
  protected:
 
@@ -84,7 +81,9 @@ class NLL : public Named {
 
 
   TMath::ValueAndError_t m_result;
-  std::vector<TMath::ValueAndError_t> m_sums; // result and error of the partial parallel sums
+  std::vector<TMath::ValueAndError_t> m_sums; // result and error of the partial parallel sums (logs of below)
+  std::vector<TMath::IntLog> m_logs; // result the partial parallel sums (still as exp,mant)
+
   UInt_t m_nBlockEvents;
   TMath::ValueAndError_t m_zeroValueAndError;
 

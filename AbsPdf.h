@@ -74,7 +74,7 @@ class AbsPdf : public Named {
   virtual Double_t evaluate() const = 0;
   virtual Double_t integral() const = 0;
 
-  inline Double_t *GetDataResultsCPUThread(const Double_t *&dataCPU, UInt_t &iPartialEnd, 
+  inline Double_t *GetDataResultsCPUThread(const Data::Value_t * __restrict__  &dataCPU, UInt_t &iPartialEnd, 
 					   const UInt_t iPartialStart, const UInt_t nPartialEvents) { 
 
     Int_t iStartMPI, iStartOpenMP(0), iEnd(0);
