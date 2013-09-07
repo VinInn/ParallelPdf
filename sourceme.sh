@@ -1,0 +1,5 @@
+export OMP_NUM_THREADS=1
+#export I_MPI_PIN_DOMAIN=socket
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD
+
+#export LD_LIBRARY_PATH=../Minuit2/lib:$LD_LIBRARY_PATH
