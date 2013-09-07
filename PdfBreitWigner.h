@@ -1,4 +1,3 @@
-
 #ifndef PDFBREITWIGNER
 #define PDFBREITWIGNER
 
@@ -22,10 +21,10 @@ public:
     Data::Value_t const * __restrict__ ldata = data.GetData(*m_x, dataOffset);
     
     auto invIntegral = GetInvIntegral();
- 
+    auto mu = m_mu->GetVal(); auto wd = m_width->GetVal();
     for (auto idx = 0U; idx!=bsize; ++idx) {
       auto x = ldata[idx];
-      auto y = evaluateOne(x,m_mu->GetVal(),m_width->GetVal())*invIntegral;
+      auto y = evaluateOne(x,mu,wd)*invIntegral;
       res[idx] = y;
     }
 

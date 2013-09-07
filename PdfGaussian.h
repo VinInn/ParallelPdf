@@ -19,7 +19,6 @@ private:
 
   virtual Double_t integral() const;
 
-
   void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
     res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
 
@@ -28,9 +27,10 @@ private:
     auto invIntegral = GetInvIntegral();
  
     auto coeff = -0.5/(m_sigma->GetVal()*m_sigma->GetVal());
+    auto mu = m_mu->GetVal();
     for (auto idx = 0U; idx!=bsize; ++idx) {
       auto x = ldata[idx];
-      auto y = evaluateOne(x,m_mu->GetVal(),coeff)*invIntegral;
+      auto y = evaluateOne(x,mu,coeff)*invIntegral;
       res[idx] = y;
     }
 

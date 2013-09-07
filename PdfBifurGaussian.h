@@ -17,6 +17,7 @@ class PdfBifurGaussian : public AbsPdf {
     parameters.AddElement(*m_sigmaL); parameters.AddElement(*m_sigmaR); }
   
 private:
+
   virtual Double_t integral() const;
 
   void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
@@ -27,9 +28,10 @@ private:
  
     auto coeffL = -0.5/(m_sigmaL->GetVal()*m_sigmaL->GetVal());
     auto coeffR = -0.5/(m_sigmaR->GetVal()*m_sigmaR->GetVal());
+    auto mu = m_mu->GetVal();
     for (auto idx = 0U; idx!=bsize; ++idx) {
       auto x = ldata[idx];
-      auto y = evaluateOne(x,m_mu->GetVal(),coeffL,coeffR)*invIntegral;
+      auto y = evaluateOne(x,mu,coeffL,coeffR)*invIntegral;
       res[idx] = y;
     }
 
