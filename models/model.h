@@ -38,6 +38,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   RooRealVar *muD1x = new RooRealVar("muD1x","",0.1115);
   RooRealVar *sigmaD1x = new RooRealVar("sigmaD1x","",0.0464);
   RooAbsPdf *gaussD1x = new RooGaussian("gaussD1x","",x,*muD1x,*sigmaD1x);
+
   RooRealVar *coeff1D2x = new RooRealVar("coeff1D2x","",0.4146);
   List<Variable> coefficientsD2x(*coeff1D2x);
   RooAbsPdf *polyD2x = new RooPolynomial<1>("polyD2x","",x,coefficientsD2x);
@@ -125,7 +126,8 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   List<Variable> nevents;
   nevents.add(*nA); nevents.add(*nB); nevents.add(*nC); nevents.add(*nD); nevents.add(*nE);
 
-  /*
+  // #define  OLDPADD
+#ifdef OLDPADD
   RooAbsPdf *pdfA = new RooProdPdf<3>("pdfA","",List<AbsPdf>(*gaussA1x,*gaussA1y,*gaussA1z));
   RooAbsPdf *pdfB = new RooProdPdf<3>("pdfB","",List<AbsPdf>(*polyB1x,*argusB1y,*addBz));
   RooAbsPdf *pdfC = new RooProdPdf<3>("pdfC","",List<AbsPdf>(*polyC1x,*addCy,*bifurgaussC1z));
@@ -135,7 +137,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   Pdfs.add(*pdfA); Pdfs.add(*pdfB); Pdfs.add(*pdfC); Pdfs.add(*pdfD); Pdfs.add(*pdfE);
   
   return new RooAddPdf<5>("extended","",Pdfs,nevents);
-  */
+#else
   List<AbsPdf> Pdfs;
   Pdfs.add(*gaussA1x); Pdfs.add(*gaussA1y ); Pdfs.add(*gaussA1z);
   Pdfs.add(*polyB1x); Pdfs.add(*argusB1y); Pdfs.add(*addBz);
@@ -143,7 +145,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   Pdfs.add(*addDx ); Pdfs.add(*gaussD1y); Pdfs.add(*bifurgaussD1z);
   Pdfs.add(*polyE1x); Pdfs.add(*addEy); Pdfs.add(*bifurgaussE1z);
   return new PdfAdd3Prod<5>("extended","",Pdfs,nevents);
-
+#endif
   //  return pdfE;
   //  return argusB1y;
   //  return bifurgaussE1z;

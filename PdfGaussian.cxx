@@ -1,4 +1,3 @@
-
 #include "PdfGaussian.h"
 
 #include <iostream>
@@ -8,11 +7,6 @@ PdfGaussian::PdfGaussian(const Char_t* name, const Char_t* title, Variable &x,
   AbsPdf(name,title), m_x(&x), m_mu(&mu), m_sigma(&sigma)
 {
   
-}
-
-Double_t PdfGaussian::evaluate() const
-{
-  return evaluateLocal(m_x->GetVal(),m_mu->GetVal(),m_sigma->GetVal());
 }
 
 Double_t PdfGaussian::integral() const
@@ -26,46 +20,5 @@ Double_t PdfGaussian::integral() const
 
   return ret;
   
-}
-
-Bool_t PdfGaussian::evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
-				 const Double_t invIntegral)
-{
-  const Data::Value_t  *__restrict__ dataCPU = m_data->GetCPUData(*m_x);
-  dataCPU = (const Data::Value_t *)__builtin_assume_aligned (dataCPU, 32, 0);
-  if (dataCPU==0)
-    return kFALSE;
-
-  UInt_t iPartialEnd(0);
-  Double_t* __restrict__ resultsCPU = GetDataResultsCPUThread(dataCPU,iPartialEnd,iPartialStart,nPartialEvents);
-  resultsCPU = (Double_t *)__builtin_assume_aligned (resultsCPU, 32, 0);
-
-
-  if (m_doCalculationBy==kCilk_for) {
-    CilkSafeCall(
-#ifdef __CILK
-#pragma cilk grainsize = Cilk::grainsize
-#endif
-#pragma ivdep
-		 _Cilk_for (Int_t idx = (Int_t)iPartialStart; idx<(Int_t)iPartialEnd; idx++) {
-		   resultsCPU[idx] = evaluateLocal(dataCPU[idx],m_mu->GetVal(),m_sigma->GetVal())*invIntegral;
-		 }
-		 );
-  }
-  else {
-
-#ifndef USE_CEAN
-#pragma ivdep
-    auto coeff = -0.5/(m_sigma->GetVal()*m_sigma->GetVal());
-    for (Int_t idx = (Int_t)iPartialStart; idx<(Int_t)iPartialEnd; idx++) {
-      resultsCPU[idx] = evaluateLocalOpt(dataCPU[idx],m_mu->GetVal(),coeff)*invIntegral;
-    }
-#else
-    resultsCPU[iPartialStart:iPartialEnd-iPartialStart] = evaluateLocal(dataCPU[iPartialStart:iPartialEnd-iPartialStart],
-									m_mu->GetVal(),m_sigma->GetVal())*invIntegral;
-#endif
-  }
-
-  return kTRUE;
 }
 

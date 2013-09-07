@@ -1,6 +1,22 @@
-
 #ifndef TMATH_HH
 #define TMATH_HH
+
+#include<cstdlib>
+
+#ifdef __APPLE__
+inline void * memalign(size_t a, size_t n) { void * p=0;  posix_memalign(&p,a,n); return p;}
+#else
+#include <malloc.h>
+#endif
+#ifndef ALIGNMENT
+#define ALIGNMENT 32
+#endif
+
+// #define ASSUME_ALIGNED(x,i) __builtin_assume_aligned(x,i)
+// #define ASSUME_ALIGNED(x,i) x
+
+
+inline size_t stride(size_t size) {  return (ALIGNMENT/sizeof(double))*(size/(ALIGNMENT/sizeof(double))+1);} // ok ok I am wasting ALIGNMENT bytes!
 
 #include <vdt/vdtMath.h>
 #include <cmath>
@@ -26,47 +42,33 @@ typedef float Float_t;
 
 namespace TMath {
 
-  constexpr Double_t Pi()       { return 3.14159265358979323846; }
-  constexpr Double_t TwoPi()    { return 2.0 * Pi(); }
-  constexpr Double_t PiOver2()  { return Pi() / 2.0; }
-  constexpr Double_t PiOver4()  { return Pi() / 4.0; }
-  constexpr Double_t InvPi()    { return 1.0 / Pi(); }
-  constexpr Double_t RadToDeg() { return 180.0 / Pi(); }
-  constexpr Double_t DegToRad() { return Pi() / 180.0; }
-  constexpr Double_t Sqrt2()    { return 1.4142135623730950488016887242097; }
-
-  inline Double_t LnGamma(Double_t z) { return std::lgamma(z); }
+  inline Double_t Pi()       { return 3.14159265358979323846; }
+  inline Double_t TwoPi()    { return 2.0 * Pi(); }
+  inline Double_t PiOver2()  { return Pi() / 2.0; }
+  inline Double_t PiOver4()  { return Pi() / 4.0; }
+  inline Double_t InvPi()    { return 1.0 / Pi(); }
+  inline Double_t RadToDeg() { return 180.0 / Pi(); }
+  inline Double_t DegToRad() { return Pi() / 180.0; }
+  inline Double_t Sqrt2()    { return 1.4142135623730950488016887242097; }
+  inline Double_t LnGamma(Double_t z) { return lgamma(z); }
   inline Double_t Floor(Double_t x) { return std::floor(x); }
 
 
-#ifdef STD_MATH
-  inline Double_t Tan(Double_t x) { return std::tan(x); }
-  inline Double_t Cos(Double_t x) { return std::cos(x); }
-  inline Double_t Sin(Double_t x) { return std::sin(x); }
-  inline Double_t Log(Double_t x) { return std::log(x); }
-  inline Double_t Exp(Double_t x) { return std::exp(x); }
-  inline Double_t ATan(Double_t x) { return std::atan(x); }
-  inline Double_t ATan2(Double_t y, Double_t x) { return std::atan2(y, x);  }
-#else
   inline Double_t Tan(Double_t x) { return vdt::fast_tan(x); }
   inline Double_t Cos(Double_t x) { return vdt::fast_cos(x); }
   inline Double_t Sin(Double_t x) { return vdt::fast_sin(x); }
   inline Double_t Log(Double_t x) { return vdt::fast_log(x); }
-  inline Double_t Exp(Double_t x) { return vdt::fast_exp(x); }
-  inline Double_t ATan(Double_t x) { return vdt::fast_atan(x); }
-  inline Double_t ATan2(Double_t y, Double_t x) { return vdt::fast_atan2(y, x);  }
-#endif
-  inline Double_t Sqrt(Double_t x) { return std::sqrt(x); }
   inline Double_t Abs(Double_t x) { return std::abs(x); }
+  inline Double_t Exp(Double_t x) { return vdt::fast_exp(x); }
+  inline Double_t Sqrt(Double_t x) { return std::sqrt(x); }
   inline Double_t Power(Double_t x, Double_t y) { return std::pow(x,y); }
   inline Double_t Erf(Double_t x) { return erf(x); }
+  inline Double_t ATan(Double_t x) { return vdt::fast_atan(x); }
+  inline Double_t ATan2(Double_t y, Double_t x) { return vdt::fast_atan2(y, x);  }
 
   inline Double_t Min(Double_t a, Double_t b) { return std::min(a,b); }
   inline Int_t Min(Int_t a, Int_t b) { return std::min(a,b); }
   inline UInt_t Min(UInt_t a, UInt_t b) { return std::min(a,b); }
-
-
-
 
   // Does the sum between a and b, return the sum and the error due to rounding
   // Use the Kahan algorithm (Fast2Sum algorithm)
@@ -222,7 +224,7 @@ namespace TMath {
   }
 
 
-  struct IntLog {
+  struct alignas(128) IntLog {
     IntLog() : iexp(0), mantissa(1.){}
     IntLog(int i, double m) : iexp(i), mantissa(m){}
     int iexp=0;

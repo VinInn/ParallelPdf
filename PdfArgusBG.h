@@ -1,4 +1,3 @@
-
 #ifndef PDFARGUSBG
 #define PDFARGUSBG
 
@@ -16,30 +15,41 @@ public:
 
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(*m_m0); parameters.AddElement(*m_c); }
 
- protected:
-  virtual Double_t evaluate() const;
+private:
   virtual Double_t integral() const;
 
-  virtual Bool_t evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
-			      const Double_t invIntegral);
-  
- private:
-  inline Double_t evaluateLocal(const Double_t m, const Double_t om0,
-				const Double_t c) const {
+  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    
+    Data::Value_t const * __restrict__ ldata = data.GetData(*m_m, dataOffset);
+    
+    auto invIntegral = GetInvIntegral();
+ 
+    auto om0 = 1./m_m0->GetVal();
+    auto c = m_c->GetVal();
+    for (auto idx = 0U; idx!=bsize; ++idx) {
+      auto x = ldata[idx];
+      auto y = evaluateOne(x,om0,c)*invIntegral;
+      res[idx] = y;
+    }
 
+  }
+
+  static Double_t evaluateOne(const Double_t m, const Double_t om0,
+			      const Double_t c) {
+    
     Double_t t= m*om0;
-
-    Double_t u= ((Double_t)1.) - t*t;
+    
+    Double_t u=  1. - t*t;
     
     // return (t >= 1.) ? 0. :  m*TMath::Sqrt(u)*TMath::Exp(c*u) ;
     return m*TMath::Sqrt(u)*TMath::Exp(c*u) ;
   }
-
- private:
+  
+private:
   Variable *m_m;
   Variable *m_m0;
   Variable *m_c;
-
+  
 };
 
 #endif

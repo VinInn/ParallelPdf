@@ -4,8 +4,6 @@
 #include "AbsPdf.h"
 #include "List.h"
 #include "TMath.h"
-#include "Results.h"
-#include "openmp.h"
 
 #define RooAddPdf PdfAdd
 
@@ -13,7 +11,7 @@
 template<typename T, int N>
 struct Add {
 
-  T operator()(T const * const * v, T const * c, int i ) const { return (*c)*(*v)[i] + add(v+1,c+1,i); }
+  T operator()(T const * v, T const * c, int i, int stride ) const { return (*c)*v[i] + add(v+stride,c+1,i,stride); }
   T operator()(std::initializer_list<T> il) const { return *il.begin()+add(std::begin(il)+1);}
   Add<T,N-1> add;
   
@@ -23,7 +21,7 @@ template<typename T>
 struct Add<T,2> {
   
   T operator()(T x, T y) const { return x+y;}
-  T operator()(T const * const * v, T const * c, int i ) const { return (*c)*(*v)[i] + (*(c+1))*(*(v+1))[i]; }
+  T operator()(T const * v, T const * c, int i, int stride ) const { return (*c)*v[i] + (*(c+1))*(v+stride)[i]; }
   T operator()(std::initializer_list<T> il) const { return *il.begin() + *(std::begin(il)+1);}
 };
 
@@ -57,15 +55,7 @@ public:
   
   virtual ~PdfAdd() { }
   
-  virtual const Results & GetValSIMD(UInt_t iStart = 0, UInt_t nPartialEvents = 0) {
-    assert(m_doCalculationBy!=kVirtual && 
-	   evaluateSIMD(iStart,nPartialEvents,1./GetIntegral()));
-    
-    return m_resultsCPU;
-  }
-  
-  
-  
+   
   virtual void GetParameters(List<Variable>& parameters) 
   {
     parameters.AddElement(m_fractions);
@@ -86,61 +76,20 @@ public:
     
   }
   
-  virtual void Init(const Data& data, Bool_t *doLog, DoCalculationBy doCalculationBy = kOpenMP)
-  {
-    AbsPdf::Init(data,doLog,doCalculationBy);
-    AbsPdf *pdf(0);
-    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
-    while ((pdf = iter_pdfs.Next())!=0) {
-      pdf->Init(data,doLog,doCalculationBy);
-    }
-    
-  }
-  
-  virtual void ClearResults(Bool_t recursive = kFALSE) {
-    AbsPdf::ClearResults();
-    if (recursive) {
-      AbsPdf *pdf(0);
-      List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
-      while ((pdf = iter_pdfs.Next())!=0) {
-	pdf->ClearResults(recursive);
-      }
-    }
-  }
 
   
-protected:
+private:
 
-  virtual Double_t evaluate() const {
-    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
-    List<Variable>::Iterator iter_fractions(m_fractions.GetIterator());
-    
-    AbsPdf *pdf = iter_pdfs.Next();
-    Variable *var(0);
-    Double_t lastFraction = 1.;
-    Double_t ret(0);
-    
-    while ((var = iter_fractions.Next())!=0) {
-      lastFraction -= var->GetVal();
-      ret += var->GetVal()*pdf->GetVal();
-      pdf = iter_pdfs.Next();
-    }
-    
-    if (!m_isExtended)
-      ret += lastFraction*pdf->GetVal();
-    
-    return ret;
-  }
+
 
   virtual Double_t integral() const { return m_isExtended ? ExpectedEvents() : 1.; }
   
-  virtual Bool_t evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents, 
-			      const Double_t invIntegral) {
 
-    auto nEvents = m_data->GetEntries();
-    auto nEventsThread = GetParallelNumElements(nEvents);
+  virtual void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
 
-    const double * res[N];
+    auto strid = stride(bsize);
+    alignas(ALIGNMENT) double lres[N][strid];
     double coeff[N];
 
     List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
@@ -150,37 +99,29 @@ protected:
     AbsPdf *pdf = iter_pdfs.Next();
     Double_t lastFraction = 1.;
  
-    UInt_t nResults(0), iPartialEnd;
-    
+   
     int k=0;
     while ((var = iter_fractions.Next())!=0) {
       lastFraction -= var->GetVal();
       coeff[k]=  var->GetVal();
-      const Results* pResultsPdf = &(pdf->GetValSIMD(iPartialStart,nPartialEvents));
-      res[k] = pResultsPdf->GetData(nResults,iPartialEnd,
-				    iPartialStart,nPartialEvents);
+      pdf->GetVal(lres[k], bsize, data, dataOffset);
       pdf = iter_pdfs.Next();
       ++k;
     }
 
     if (!m_isExtended) {
       coeff[k]=lastFraction;
-      const Results* pResultsPdf = &(pdf->GetValSIMD(iPartialStart,nPartialEvents));
-      res[k] = pResultsPdf->GetData(nResults,iPartialEnd,
-				  iPartialStart,nPartialEvents);
-      assert(N==k+1);
-   } else 
+      pdf->GetVal(lres[k], bsize, data, dataOffset);
+       assert(N==k+1);
+    } else 
       assert(N==k);
     
-    double * resultsCPU = m_resultsCPU.AllocateData(nEventsThread);
-
     Add<double,N> add;
-    const Int_t iE = iPartialEnd;
-    for (auto idx = (Int_t)iPartialStart; idx<iE; idx++) {
-      resultsCPU[idx] = add(res,coeff,idx)*invIntegral;
+    double const *  kres = lres[0];
+    auto invIntegral = GetInvIntegral();
+    for (auto idx = 0; idx!=bsize; ++idx) {
+      res[idx] = add(kres,coeff,idx, strid)*invIntegral;
     }
-    
-    return true;
 
   }
 

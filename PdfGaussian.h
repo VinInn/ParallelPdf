@@ -14,27 +14,35 @@ public:
 
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(*m_mu); parameters.AddElement(*m_sigma); }
   
- protected:
-  virtual Double_t evaluate() const;
+
+private:
+
   virtual Double_t integral() const;
-  
-  virtual Bool_t evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
-			      const Double_t invIntegral);
 
- private:
-  inline Double_t evaluateLocal(const Double_t x, const Double_t mu,
-				const Double_t sigma) const {
+
+  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
+
+    Data::Value_t const * __restrict__ ldata = data.GetData(*m_x, dataOffset);
+    
+    auto invIntegral = GetInvIntegral();
+ 
+    auto coeff = -0.5/(m_sigma->GetVal()*m_sigma->GetVal());
+    for (auto idx = 0U; idx!=bsize; ++idx) {
+      auto x = ldata[idx];
+      auto y = evaluateOne(x,m_mu->GetVal(),coeff)*invIntegral;
+      res[idx] = y;
+    }
+
+  }  
+
+  static Double_t evaluateOne(const Double_t x, const Double_t mu,
+			      const Double_t coeff)  {
     auto arg = x-mu;
-    auto coeff = -0.5/(sigma*sigma);
     return TMath::Exp(coeff*arg*arg);
   }
 
-  inline static Double_t evaluateLocalOpt(const Double_t x, const Double_t mu,
-                                const Double_t coeff) {
-    auto arg = x-mu;
-    return TMath::Exp(coeff*arg*arg);
-  }
-
+ 
   
  private:
   Variable *m_x;

@@ -21,12 +21,12 @@ DIR       = XEON
 # -debug all
 SOFLAGS  = -shared
 # Add Minuit2 directory
-INCLUDE  = -I../Minuit2/include/ -I../ -I/home/vin/vdt/include
+INCLUDE  = -I../Minuit2/include/ -I../
 SOLIBS   = -L../Minuit2/lib -lMinuit2 -Wl,-rpath=../Minuit2/lib
 
 # CXXFLAGS  = -O2 -fPIC  -march=core-avx2
-CXXFLAGS = -g -Ofast -fPIC  -march=core-avx2  -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11 -ftree-vectorizer-verbose=1 -Wall --param vect-max-version-for-alias-checks=100  -DWARNINGMSG $(OPTFLAGS)
-# -fipa-pta -fprefetch-loop-arrays
+CXXFLAGS = -g -Ofast -fPIC  -march=core-avx2  -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11 -ftree-vectorizer-verbose=1 -Wall --param vect-max-version-for-alias-checks=100 -DWARNINGMSG $(OPTFLAGS)
+# -fprefetch-loop-arrays
 
 
 ifdef KNF
@@ -121,7 +121,7 @@ $(LIB): $(OBJLIST)
 
 $(MAIN)_$(DIR): $(MAIN).cxx $(LIB) models/*.h
 	@echo "Making executable..."
-	$(CXX) $(CXXFLAGS) $(CXXWARN) $(OPENMP) $(ROOTINC) $(INCLUDE) $(ROOTLIB) $(SOLIBS) $< ./$(LIB) -o $@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(CXXWARN) $(OPENMP) $(ROOTINC) $(INCLUDE) $(ROOTLIB) $(SOLIBS) $<  *.cc ./$(LIB) -o $@ $(LDFLAGS) -DDO_MINUIT
 
 valgrind:
 	valgrind --tool=callgrind --simulate-cache=yes --collect-jumps=yes --separate-threads=yes --simulate-hwpref=yes --cacheuse=yes ./main -n 100000

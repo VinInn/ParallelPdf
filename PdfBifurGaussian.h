@@ -16,41 +16,28 @@ class PdfBifurGaussian : public AbsPdf {
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(*m_mu); 
     parameters.AddElement(*m_sigmaL); parameters.AddElement(*m_sigmaR); }
   
- protected:
-  virtual Double_t evaluate() const;
+private:
   virtual Double_t integral() const;
-  
-  virtual Bool_t evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
-			      const Double_t invIntegral);
-  
- private:
-  
-  inline Double_t evaluateLocal(const Double_t x, const Double_t mu,
-				const Double_t sigmaL, const Double_t sigmaR) const {
 
-    Double_t arg = x - mu;
-    Double_t coef = 0.0;
+  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
     
-    coef = (arg<0) ? -((Double_t)0.5)/(sigmaL*sigmaL) : -((Double_t)0.5)/(sigmaR*sigmaR);
-
-    /*
-    if (arg < coef) {
-      if (TMath::Abs(sigmaL)>1e-30) {
-        coef = -((Double_t)0.5)/(sigmaL*sigmaL);
-      }
-    } else {
-      if (TMath::Abs(sigmaR)>1e-30) {
-        coef = -((Double_t)0.5)/(sigmaR*sigmaR);
-      }
+    Data::Value_t const * __restrict__ ldata = data.GetData(*m_x, dataOffset);
+    
+    auto invIntegral = GetInvIntegral();
+ 
+    auto coeffL = -0.5/(m_sigmaL->GetVal()*m_sigmaL->GetVal());
+    auto coeffR = -0.5/(m_sigmaR->GetVal()*m_sigmaR->GetVal());
+    for (auto idx = 0U; idx!=bsize; ++idx) {
+      auto x = ldata[idx];
+      auto y = evaluateOne(x,m_mu->GetVal(),coeffL,coeffR)*invIntegral;
+      res[idx] = y;
     }
-    */    
 
-    return TMath::Exp(coef*arg*arg);
-  }
+  }  
+ 
 
-
- inline static Double_t evaluateLocalOpt(const Double_t x, const Double_t mu,
-                                const Double_t coeffL, const Double_t coeffR) {
+  static Double_t evaluateOne(const Double_t x, const Double_t mu,
+			      const Double_t coeffL, const Double_t coeffR) {
 
    Double_t arg = x - mu;
    Double_t coef = (arg<0) ? coeffL : coeffR;

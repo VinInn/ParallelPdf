@@ -5,8 +5,6 @@
 #include "Variable.h"
 #include "List.h"
 
-#include "tbb.h"
-
 
 #include<algorithm>
 
@@ -55,16 +53,8 @@ public:
   virtual ~PdfPolynomial(){}
   
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(m_coeff); }
-  static void SetBlockSize(Int_t blockSize) {  }
   
-protected:
-  virtual Double_t evaluate() const
-  {
-    UInt_t size = m_coeff.GetSize();
-    Double_t coeffCPU[size+1];
-    loadCoeff(coeffCPU,size);
-    return evaluateLocal(m_x->GetVal(),coeffCPU,size);
-  }
+private:
   
   virtual Double_t integral() const
   {
@@ -83,43 +73,27 @@ protected:
   
   
   
-  
-  virtual Bool_t evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
-			      const Double_t invIntegral) {
-    
-    const Data::Value_t  *__restrict__ dataCPU = m_data->GetCPUData(*m_x);
-    dataCPU = (const Data::Value_t *)__builtin_assume_aligned (dataCPU, 32, 0);
+  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
 
-    if (dataCPU==0)
-      return kFALSE;
+    Data::Value_t const * __restrict__ ldata = data.GetData(*m_x, dataOffset);
+    
+    auto invIntegral = GetInvIntegral();
     
     Int_t size = m_coeff.GetSize();
     Double_t coeffCPU[size+1];
     loadCoeff(coeffCPU,size);
     assert(m_coeff.GetSize()==N);
     
-   Poly poly(coeffCPU);
-  
-   UInt_t iPartialEnd(0);
-   Double_t* __restrict__ resultsCPU = GetDataResultsCPUThread(dataCPU,iPartialEnd,iPartialStart,nPartialEvents);
-   resultsCPU = (Double_t *)__builtin_assume_aligned (resultsCPU, 32, 0);
-  
+    Poly poly(coeffCPU);
+    
+    for (auto idx = 0; idx!=bsize; ++idx) {
+      auto x = ldata[idx];
+      auto y = poly(x)*invIntegral;
+      res[idx] = y;
+    }
 
-  int is = iPartialStart; int ie = iPartialEnd;
-  double iI = invIntegral; 
-  for (auto idx = is; idx<ie; ++idx) {
-    auto x = dataCPU[idx];
-    auto y = poly(x)*iI;
-    resultsCPU[idx] = y;
-
-  }
-  
-  
-  return kTRUE;
 }
-
-  
-  
 
 
  private:
@@ -135,24 +109,12 @@ protected:
 
   }
 
-  inline Double_t evaluateLocal(const Double_t x, const Double_t *coeff, UInt_t order) const {
-
-    double result = coeff[order];
-    for (;order>0;--order)
-      result = result*x+coeff[order-1];
-
-    return result;
-
-  }
-
-  inline Double_t evaluateLocalSingleCoeff(const Double_t x, const Double_t coeff, const Double_t result) const {
-    return (result*x+coeff);
-  }
+ 
 
  private:
   const Variable *m_x;
   List<Variable> m_coeff;
-  // static Int_t m_blockSize;
+ 
 };
 
 #endif

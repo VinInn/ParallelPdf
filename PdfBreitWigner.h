@@ -13,18 +13,27 @@ public:
 
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(*m_mu); parameters.AddElement(*m_width); }
   
- protected:
-  virtual Double_t evaluate() const;
-  virtual Double_t integral() const;
-  
-  virtual Bool_t evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
-			      const Double_t invIntegral);
-  
  private:
 
-  inline Double_t evaluateLocal(const Double_t x, const Double_t mu,
+  virtual Double_t integral() const;
+
+  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    
+    Data::Value_t const * __restrict__ ldata = data.GetData(*m_x, dataOffset);
+    
+    auto invIntegral = GetInvIntegral();
+ 
+    for (auto idx = 0U; idx!=bsize; ++idx) {
+      auto x = ldata[idx];
+      auto y = evaluateOne(x,m_mu->GetVal(),m_width->GetVal())*invIntegral;
+      res[idx] = y;
+    }
+
+  }  
+  inline Double_t evaluateOne(const Double_t x, const Double_t mu,
 				const Double_t width) const {
-    return ((Double_t)1.)/(TMath::Power(x-mu,2)+((Double_t)0.25)*width*width);
+    auto arg = x-mu;
+    return 1./(arg*arg+0.25*width*width);
   }
 
  private:

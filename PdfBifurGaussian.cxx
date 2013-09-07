@@ -10,10 +10,6 @@ PdfBifurGaussian::PdfBifurGaussian(const Char_t* name, const Char_t* title, Vari
 
 }
 
-Double_t PdfBifurGaussian::evaluate() const
-{
-  return evaluateLocal(m_x->GetVal(),m_mu->GetVal(),m_sigmaL->GetVal(),m_sigmaR->GetVal());
-}
 
 Double_t PdfBifurGaussian::integral() const
 {
@@ -36,43 +32,3 @@ Double_t PdfBifurGaussian::integral() const
   return integral*rootPiBy2;
 
 }
-
-Bool_t PdfBifurGaussian::evaluateSIMD(const UInt_t& iPartialStart, const UInt_t& nPartialEvents,
-				      const Double_t invIntegral)
-{
-  const Data::Value_t *dataCPU = m_data->GetCPUData(*m_x);
-  if (dataCPU==0)
-    return kFALSE;
-  
-  UInt_t iPartialEnd(0);
-  Double_t* resultsCPU = GetDataResultsCPUThread(dataCPU,iPartialEnd,iPartialStart,nPartialEvents);
-
-  if (m_doCalculationBy==kCilk_for) {
-    CilkSafeCall(
-#ifdef __CILK
-#pragma cilk grainsize = Cilk::grainsize
-#endif
-#pragma ivdep
-                 _Cilk_for (Int_t idx = (Int_t)iPartialStart; idx<(Int_t)iPartialEnd; idx++) {
-		   resultsCPU[idx] = evaluateLocal(dataCPU[idx],m_mu->GetVal(),m_sigmaL->GetVal(),m_sigmaR->GetVal())*invIntegral;
-		 }
-		 );
-  }
-  else {
-
-#ifndef USE_CEAN
-    auto coeffL = -0.5/(m_sigmaL->GetVal()*m_sigmaL->GetVal());
-    auto coeffR = -0.5/(m_sigmaR->GetVal()*m_sigmaR->GetVal());
-#pragma ivdep
-    for (Int_t idx = (Int_t)iPartialStart; idx<(Int_t)iPartialEnd; idx++) {
-      resultsCPU[idx] = evaluateLocalOpt(dataCPU[idx],m_mu->GetVal(),coeffL,coeffR)*invIntegral;
-    }
-#else
-    resultsCPU[iPartialStart:iPartialEnd-iPartialStart] = evaluateLocal(dataCPU[iPartialStart:iPartialEnd-iPartialStart],
-									m_mu->GetVal(),m_sigmaL->GetVal(),m_sigmaR->GetVal())*invIntegral;
-#endif
-  }
-
-  return kTRUE;
-}
-

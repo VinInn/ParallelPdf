@@ -25,6 +25,10 @@ template<class T> class List : public Named {
   }
   virtual ~List() { }
 
+
+  std::vector<T*> & operator()() { return m_list;}
+  std::vector<T*> const & operator()() const {return m_list;}
+
   Bool_t AddElement(T &element) {
     m_list.push_back(&element);
     m_resetIter = false;
