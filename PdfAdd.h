@@ -66,15 +66,17 @@ public:
     }
   }
   
-  virtual void CacheIntegral() {
+  virtual void CacheIntegral(){
     AbsPdf::CacheIntegral();
-    AbsPdf *pdf(0);
-    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
-    while ((pdf = iter_pdfs.Next())!=0) {
-      pdf->CacheIntegral();
-    }
-    
+    for (auto pdf : m_pdfs()) pdf->CacheIntegral();
   }
+ 
+
+  virtual void CacheAllIntegral(){
+    AbsPdf::CacheAllIntegral();
+    for (auto pdf : m_pdfs()) pdf->CacheAllIntegral();
+  }     
+
   
 
   

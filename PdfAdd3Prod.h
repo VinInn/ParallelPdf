@@ -25,7 +25,7 @@ struct Add3Prod<T,2> {
 
 // very ad hoc...
 template<int N>
-class PdfAdd3Prod : public AbsPdf {
+class PdfAdd3Prod final : public AbsPdf {
 public:
 
   PdfAdd3Prod (const Char_t* name, const Char_t* title, List<AbsPdf> pdfs, List<Variable> fractions) :
@@ -54,13 +54,19 @@ public:
     
     // better this loop to be always the same...
     // first me
-    for ( auto p : m_fractions()) m_parCache.push_back(p->GetVal());
+    for ( auto p : m_fractions())  { 
+      m_parCache.push_back(p->GetVal()); 
+      m_AllParams.push_back(p);
+    }
     for ( auto pdf : m_pdfs() ) { 
       m_modPdfs.push_back(true);
       m_parPdfs.push_back(m_parCache.size());
       List<Variable> parameters;
       pdf->GetParameters(parameters);
-      for (auto p : parameters()) m_parCache.push_back(p->GetVal());
+      for (auto p : parameters()) {
+	m_parCache.push_back(p->GetVal());
+	m_AllParams.push_back(p);
+      }
     }
     m_parPdfs.push_back(m_parCache.size());
     assert(m_parPdfs.size()==m_pdfs().size()+1);
@@ -71,27 +77,17 @@ public:
     int n=0;
     // here we should verify fractions....
 
-    int k=0; // m_parPdfs[0] start of param first pdf
-    for ( auto pdf : m_pdfs() ) {
+    // m_parPdfs[0] start of param first pdf
+     for ( auto k=0; k!=m_pdfs().size(); ++k ) {
       m_modPdfs[k]=false;
-      List<Variable> parameters;
-      pdf->GetParameters(parameters);
-      int i = m_parPdfs[k];
-      for (auto p : parameters()) {
-	if (p->GetVal()!=m_parCache[i++]) { m_modPdfs[k]=true; ++n; break;}
-      }
-      ++k;
+      for (int i = m_parPdfs[k]; i!=m_parPdfs[k+1]; ++i)
+	if (m_AllParams[i]->GetVal()!=m_parCache[i]) { m_modPdfs[k]=true; ++n; break;}
     }
     doNotCache= (n==1);
     if (n>1) {  // resetCache
-      int k=0; // m_parPdfs[0] start of param first pdf
-      for ( auto pdf : m_pdfs() ) {
-	List<Variable> parameters;
-	pdf->GetParameters(parameters);
-	int i = m_parPdfs[k];
-	for (auto p : parameters()) m_parCache[i++]=p->GetVal();
-	++k;
-      }
+       // m_parPdfs[0] start of param first pdf
+      for (int i = m_parPdfs.front(); i!=m_parPdfs.back(); ++i)
+	m_parCache[i]=m_AllParams[i]->GetVal();
     }
     return n;
   }
@@ -110,13 +106,17 @@ public:
   }
   
   virtual void CacheIntegral() {
+    // thread local...
     AbsPdf::CacheIntegral();
-    AbsPdf *pdf(0);
-    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
-    while ((pdf = iter_pdfs.Next())!=0) {
-      pdf->CacheIntegral();
-    }
-    
+    for ( auto k=0; k!=m_pdfs().size(); ++k )
+      m_pdfs()[k]->CacheIntegral();
+  }
+
+  virtual void CacheAllIntegral() {
+    // not thread safe... need to be cached as used for the whole loop
+    AbsPdf::CacheAllIntegral();
+    for ( auto k=0; k!=m_pdfs().size(); ++k )
+      if(m_modPdfs[k]) m_pdfs()[k]->CacheAllIntegral();
   }
   
 
@@ -209,7 +209,8 @@ private:
   mutable List<Variable> m_fractions;
   
   std::vector<bool> m_modPdfs; // pdf to be called
-  std::vector<unsigned short> m_parPdfs; // index in vector below
+  std::vector<unsigned short> m_parPdfs; // index in vectors below
+  std::vector<Variable*> m_AllParams;
   std::vector<double> m_parCache; // cache of param (from  previous call)
 
   mutable Data m_resCache;

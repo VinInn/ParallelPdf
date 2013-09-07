@@ -15,7 +15,7 @@
 class NLL : public Named {
  public:
   NLL(const Char_t* name, const Char_t* title, Data &data, AbsPdf &pdf,
-      bool dyn, bool idocache);
+      int dyn, bool idocache);
 
   ~NLL();  
 
@@ -57,8 +57,7 @@ private:
 
 
   UInt_t m_nBlockEvents;
-  int m_ngroups=2;
-  bool dynamic=false;
+  int m_ngroups=0;
   bool docache=true;
  
  

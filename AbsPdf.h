@@ -6,6 +6,8 @@
 #include "Named.h"
 #include "TMath.h"
 #include "Data.h"
+#include "omp.h"
+#include <vector>
 
 #define RooAbsPdf AbsPdf
 
@@ -13,7 +15,7 @@ class AbsPdf : public Named {
  public:
 
  
-  AbsPdf(const Char_t* name, const Char_t* title): Named(name,title){}
+  AbsPdf(const Char_t* name, const Char_t* title): Named(name,title), m_InvIntegral(omp_get_max_threads()){}
   virtual ~AbsPdf() {}
 
 
@@ -27,12 +29,18 @@ class AbsPdf : public Named {
   virtual void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const=0; 
   
   // to be called outside parallel loop 
+  virtual void CacheAllIntegral() {
+    auto li = 1./integral();
+    for (auto & iI :  m_InvIntegral) iI = li;
+  }
+
+  // to be called inside parallel loop 
   virtual void CacheIntegral() {
-    m_InvIntegral = 1./integral();
+    m_InvIntegral[omp_get_thread_num()] = 1./integral();
   }
 
   
-  Double_t GetInvIntegral() const { return  m_InvIntegral;}
+  Double_t GetInvIntegral() const { return  m_InvIntegral[omp_get_thread_num()];}
 
   virtual Double_t ExtendedTerm(UInt_t observed) const { return .0; }
   virtual Bool_t IsExtended() const { return kFALSE; }
@@ -45,7 +53,7 @@ private:
   virtual Double_t integral() const = 0;
 
  
-  Double_t m_InvIntegral;
+  std::vector<double> m_InvIntegral;
 
 
 };

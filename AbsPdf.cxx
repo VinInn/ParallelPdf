@@ -13,7 +13,7 @@ void AbsPdf::RandomizeFloatParameters()
   while ((par = pdfPars.Next())!=0) {
     if (!par->IsConstant()) {
       std::cout << par->GetName() << " = " << par->GetVal();
-      par->SetVal(rand.Uniform(par->getMin(),par->getMax()));
+      par->SetAllVal(rand.Uniform(par->getMin(),par->getMax()));
       std::cout << " --> " << par->GetVal() << std::endl;
     }
   }

@@ -37,7 +37,7 @@ std::string outputStatus(int status)
 
 double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data, 
 	     AbsPdf & model, bool runMinos,
-	     const char* label, bool dynamic, bool docache)
+	     const char* label, int dynamic, bool docache)
 {
   // Do the calculation
   std::cout << "Runs the algorithm with `" << label << "'" << std::endl;
@@ -59,6 +59,8 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
   int callsAfterMigrad(0), callsAfterHesse(0), callsAfterMinos(0);
 #endif
 
+  auto nEval=1U;
+
   double start = Timer::Wtime();
 
   if (Iter>0) {
@@ -69,20 +71,30 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
     List<Variable> pdfPars;
     nll.GetPdf()->GetParameters(pdfPars);
     nll.GetVal(false); // init cache if needed
-    int ip=0;
+
+    // first count 
+    int nvar=0;
+    for ( auto ip=0U; ip!=pdfPars().size(); ++ip) if (!pdfPars()[ip]->IsConstant()) ++nvar;
+    
+    Variable * var[nvar];
+    int k=0;
+    for ( auto ip=0U; ip!=pdfPars().size(); ++ip) if (!pdfPars()[ip]->IsConstant()) var[k++]=pdfPars()[ip];
+    assert(k==nvar);
+
+    // double delta[nvar], vup[nvar], vdown[nvar];
+
     for (unsigned int i=0; i<Iter; i++) {
-      if(ip==pdfPars().size()) ip=0;
-      while (pdfPars()[ip]->IsConstant()) { ++ip; if(ip==pdfPars().size()) ip=0;} // hope not all constants!
-      auto v = pdfPars()[ip]->GetVal();
-      auto e = pdfPars()[ip]->GetError();
-      pdfPars()[ip]->SetVal(v+e);
-      value += nll.GetVal();
-
-      pdfPars()[ip]->SetVal(v-e);
-      value += nll.GetVal();
-      pdfPars()[ip]->SetVal(v);
-
-      ++ip;
+      // fake computation of derivatives
+      for(int k=0; k!=nvar; ++k) {
+	auto v = var[k]->GetVal();
+	auto e = var[k]->GetError();
+	var[k]->SetAllVal(v+e);
+	value += nll.GetVal();
+	var[k]->SetAllVal(v-e);
+	value -= nll.GetVal();
+	var[k]->SetAllVal(v);
+      }
+      nEval+=2*nvar;
     }
   }
   else {
@@ -116,7 +128,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
   }
 #endif
 
-  if (Iter>0) std::cout << "NUmber of Iterations " << Iter << std::endl;
+  if (Iter>0) std::cout << "NUmber of Iterations " << Iter << "\nNUmber of Evaluation " << nEval << std::endl;
 
   List<Variable> pdfPars;
   
@@ -171,10 +183,10 @@ int main(int argc, char **argv)
     std::cout << "-n <int> to set the number of events (100K by default)\n";
     std::cout << "-m to run minos (false by default)\n";
      std::cout << "-i <int> to set the number of iterations (0 by default)\n";
-    std::cout << "-b <int> to set the number of events per block (default: 0 for OpenMP and Cilk, 1024 for TBB)\n";
+    std::cout << "-b <int> to set the number of events per block (default: 1024)\n";
     //    std::cout << "-k to run on MIC, offload mode (false by default)\n";
     std::cout << "-a <int> to choose the algorithm to run: 0=OpenMP (default), 1=TBB, 2=Cilk\n";
-    std::cout << "-d dynamic scheduling (false by default)\n";
+    std::cout << "-d dynamic scheduling (0 by default >1 is number of groups)\n";
     std::cout << "-c use cache (false by default)\n";
 
     std::cout << std::endl;
@@ -182,12 +194,11 @@ int main(int argc, char **argv)
   }
   const unsigned int N            = ReadIntOption(argc,argv,"-n",100000);
   const bool         runMinos     = (FindOption(argc,argv,"-m")>=0);
-  const bool         externalLoop = (FindOption(argc,argv,"-e")>=0);
   int Iter                        = ReadIntOption(argc,argv,"-i",0);
-  unsigned int blockSize          = ReadIntOption(argc,argv,"-b",0);
+  unsigned int blockSize          = ReadIntOption(argc,argv,"-b",1024);
   //  const bool useMIC               = (FindOption(argc,argv,"-k")>=0);
   const unsigned int algo         = ReadIntOption(argc,argv,"-a",0);
-  const bool dynamic              = (FindOption(argc,argv,"-d")>=0);
+  const int  dynamic              = ReadIntOption(argc,argv,"-d",0);
   const bool docache              = (FindOption(argc,argv,"-c")>=0);
 
 
@@ -208,7 +219,7 @@ int main(int argc, char **argv)
     for (UInt_t i=0; i<N; i++) {
       variables.ResetIterator();
       while (Variable *var = variables.Next()) {
-	var->SetVal(rand.Uniform(var->GetMin(),var->GetMax()));
+	var->SetAllVal(rand.Uniform(var->GetMin(),var->GetMax()));
       }
       data.Push_back();
     }
@@ -230,7 +241,7 @@ int main(int argc, char **argv)
 	filedat >> value;
 	if (filedat.eof())
 	  break;
-        var->SetVal(value);
+        var->SetAllVal(value);
       }
       data.Push_back();
     }

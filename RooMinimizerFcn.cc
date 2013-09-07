@@ -48,7 +48,7 @@ double RooMinimizerFcn::operator()(const std::vector<double>& parameters) const
   _floatPdfPars.ResetIterator();
   std::vector<double>::const_iterator iterPars = parameters.begin();
   while ((par = _floatPdfPars.Next())!=0) {
-    par->SetVal(*(iterPars));
+    par->SetAllVal(*(iterPars));
     iterPars++;
   }
 
@@ -74,7 +74,7 @@ void RooMinimizerFcn::BackProp(const ROOT::Minuit2::MnUserParameters &results)
   Int_t index(0);
   while ((par = _floatPdfPars.Next())!=0) {
     index = results.Index(par->GetName());
-    par->SetVal(results.Value(index));
+    par->SetAllVal(results.Value(index));
     par->SetError(results.Error(index));
   }
 

@@ -25,7 +25,7 @@ INCLUDE  = -I../Minuit2/include/ -I../
 SOLIBS   = -L../Minuit2/lib -lMinuit2 -Wl,-rpath=../Minuit2/lib
 
 # CXXFLAGS  = -O2 -fPIC  -march=core-avx2
-CXXFLAGS = -g -Ofast -fPIC  -march=core-avx2  -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11 -ftree-vectorizer-verbose=1 -Wall --param vect-max-version-for-alias-checks=100  -DWARNINGMSG
+CXXFLAGS = -g -Ofast -fPIC  -march=core-avx2  -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11 -ftree-vectorizer-verbose=1 -Wall --param vect-max-version-for-alias-checks=100 -DWARNINGMSG $(OPTFLAGS)
 # -fprefetch-loop-arrays
 
 

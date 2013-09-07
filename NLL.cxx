@@ -14,15 +14,15 @@ namespace global {
 #include <iostream>
 
 NLL::NLL(const Char_t* name, const Char_t* title, Data &data, AbsPdf &pdf,
-	 bool dyn, bool idocache): Named(name,title), m_data(&data), m_pdf(&pdf),  
+	 int dyn, bool idocache): Named(name,title), m_data(&data), m_pdf(&pdf),  
 				   minLoop(OpenMP::GetMaxNumThreads(),1000000), 
 				   maxLoop(OpenMP::GetMaxNumThreads(),0), 
 				   aveLoop(OpenMP::GetMaxNumThreads(),0), 
-				   dynamic(dyn), docache(idocache) {}
+				   m_ngroups(dyn), docache(idocache) {}
 
 NLL::~NLL() {
 
-  if(dynamic) {
+  if(m_ngroups>0) {
     std::cout << "min dyn sched "; 
     for (auto l : minLoop) 
       std::cout << l << " ";
@@ -51,13 +51,13 @@ Double_t NLL::GetVal(bool verify)
   }
   m_nLoops++;
 
-  m_pdf->CacheIntegral();
+  m_pdf->CacheAllIntegral();
   
   m_logs.clear();
   m_logs.resize(OpenMP::GetMaxNumThreads());
 
   
-  if (dynamic) {
+  if (m_ngroups>0) {
 
     int nloops[OpenMP::GetMaxNumThreads()]={0,};
 

@@ -39,7 +39,7 @@ Bool_t Data::Get(UInt_t iEvent)
 
   auto iter = m_data+iEvent;
   for (auto var : m_vars) {
-    var->SetVal(*iter);
+    var->SetAllVal(*iter);
     iter+=m_stride;
   }
 
