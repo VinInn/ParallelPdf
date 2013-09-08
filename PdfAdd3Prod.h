@@ -42,12 +42,14 @@ public:
     
     m_pdfs.AddElement(pdfs);
     m_fractions.AddElement(fractions);
+    makeParameterCache();
     
   }
   
   void makeCache(unsigned int size) {
     m_resCache = std::move(Data("","",size,m_pdfs.GetSize()));
-    makeParameterCache();
+    for (auto i = 0U; i!=m_AllParams.size(); ++i)
+      m_parCache[i]=m_AllParams[i]->GetVal();
   } 
 
   void makeParameterCache() {
@@ -55,21 +57,24 @@ public:
     // better this loop to be always the same...
     // first me
     for ( auto p : m_fractions())  { 
-      m_parCache.push_back(p->GetVal()); 
       m_AllParams.push_back(p);
+      m_PdfsPar.push_back(-1);
     }
+    int k=0;
     for ( auto pdf : m_pdfs() ) { 
       m_modPdfs.push_back(true);
-      m_parPdfs.push_back(m_parCache.size());
+      m_parPdfs.push_back(m_AllParams.size());
       List<Variable> parameters;
       pdf->GetParameters(parameters);
       for (auto p : parameters()) {
-	m_parCache.push_back(p->GetVal());
 	m_AllParams.push_back(p);
+	m_PdfsPar.push_back(k);
       }
+      ++k;
     }
-    m_parPdfs.push_back(m_parCache.size());
+    m_parPdfs.push_back(m_AllParams.size());
     assert(m_parPdfs.size()==m_pdfs().size()+1);
+    m_parCache.resize(m_AllParams.size());
   }
 
   int verifyCache() {
@@ -97,12 +102,8 @@ public:
   
   virtual void GetParameters(List<Variable>& parameters) 
   {
-    parameters.AddElement(m_fractions);
-    AbsPdf *pdf(0);
-    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
-    while ((pdf = iter_pdfs.Next())!=0) { 
-      pdf->GetParameters(parameters);
-    }
+    parameters()=m_AllParams;
+ 
   }
   
   virtual void CacheIntegral() {
@@ -134,43 +135,38 @@ private:
     alignas(ALIGNMENT) double lres[3*N][strid];
     double coeff[N];
 
-    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
+
     List<Variable>::Iterator iter_fractions(m_fractions.GetIterator());
     
     Variable *var(0);
-    AbsPdf *pdf = iter_pdfs.Next();
     Double_t lastFraction = 1.;
     
-    int k=0; int l=0;
+    int k=0;
     while ((var = iter_fractions.Next())!=0) {
       lastFraction -= var->GetVal();
       coeff[k++]=  var->GetVal();
-      for (int j=0; j!=3; ++j) {
-	pres[l] = m_resCache.GetData(l,dataOffset);
-	if (m_modPdfs[l]) { 
-	  if (doNotCache) {
-	    pdf->GetVal(lres[l], bsize, data, dataOffset);
-	    pres[l] = &(lres[l][0]);
-	  } else {
-	    pdf->GetVal(pres[l], bsize, data, dataOffset);
-	  }
-	}
-
-	pdf = iter_pdfs.Next();
-	++l;
-      }
     }
     // this is extended...
     if (!m_isExtended) {
       coeff[k]=lastFraction;
-      for (int j=0; j!=3; ++j) {
-	pdf->GetVal(lres[l], bsize, data, dataOffset);
-	++l;
-      }
       assert(N==k+1);
     } else 
       assert(N==k);
-    assert(3*N==l);    
+ 
+
+    for (int l=0; l!=15; ++l) {
+      auto pdf = m_pdfs()[l];
+      pres[l] = m_resCache.GetData(l,dataOffset);
+      if (m_modPdfs[l]) { 
+	if (doNotCache) {
+	  pdf->GetVal(lres[l], bsize, data, dataOffset);
+	  pres[l] = &(lres[l][0]);
+	} else {
+	  pdf->GetVal(pres[l], bsize, data, dataOffset);
+	}
+      }
+    }
+
 
 
     Add3Prod<double,N> add;
@@ -212,6 +208,7 @@ private:
   std::vector<unsigned short> m_parPdfs; // index in vectors below
   std::vector<Variable*> m_AllParams;
   std::vector<double> m_parCache; // cache of param (from  previous call)
+  std::vector<short> m_PdfsPar;  // pdf corresponding to this par... (-1 is this)
 
   mutable Data m_resCache;
 
