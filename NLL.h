@@ -19,7 +19,12 @@ class NLL : public Named {
 
   ~NLL();  
 
+  // parallel esecution
   Double_t GetVal(bool verify=true);
+
+  // assume only lpar changed (as in derivatives); sequential
+  Double_t GetVal(int lpar);
+
 
   inline AbsPdf *GetPdf() { return m_pdf; }
 

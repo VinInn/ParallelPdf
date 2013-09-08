@@ -18,9 +18,11 @@ class AbsPdf : public Named {
   AbsPdf(const Char_t* name, const Char_t* title): Named(name,title), m_InvIntegral(omp_get_max_threads()){}
   virtual ~AbsPdf() {}
 
-
+  // FIXME all this needs a clean up
   virtual void makeCache(unsigned int){}
   virtual int verifyCache(){ return 0;}
+
+
 
   virtual void RandomizeFloatParameters();
   virtual void GetParameters(List<Variable>& parameters) { }
@@ -35,7 +37,7 @@ class AbsPdf : public Named {
   }
 
   // to be called inside parallel loop 
-  virtual void CacheIntegral() {
+  virtual void CacheIntegral(int lpar=-1) {
     m_InvIntegral[omp_get_thread_num()] = 1./integral();
   }
 

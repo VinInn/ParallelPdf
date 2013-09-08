@@ -29,7 +29,9 @@ class PdfAdd3Prod final : public AbsPdf {
 public:
 
   PdfAdd3Prod (const Char_t* name, const Char_t* title, List<AbsPdf> pdfs, List<Variable> fractions) :
-    AbsPdf(name,title), m_isExtended(kFALSE)
+    AbsPdf(name,title), 
+    m_lmodPdf(omp_get_max_threads(),-2),
+    m_isExtended(kFALSE)
   {
     
     if (pdfs.GetSize()!=3*fractions.GetSize() && pdfs.GetSize()!=3*fractions.GetSize()-1) {
@@ -72,12 +74,14 @@ public:
       }
       ++k;
     }
+    assert(k==m_pdfs().size());
     m_parPdfs.push_back(m_AllParams.size());
     assert(m_parPdfs.size()==m_pdfs().size()+1);
     m_parCache.resize(m_AllParams.size());
   }
 
   int verifyCache() {
+    for(auto & p : m_lmodPdf) p=-2;
     // assumption: minuit either change one param or all...
     int n=0;
     // here we should verify fractions....
@@ -106,11 +110,16 @@ public:
  
   }
   
-  virtual void CacheIntegral() {
+  virtual void CacheIntegral(int lpar=-1) {
+    doNotCache=true;
     // thread local...
     AbsPdf::CacheIntegral();
-    for ( auto k=0; k!=m_pdfs().size(); ++k )
-      m_pdfs()[k]->CacheIntegral();
+    assert(lpar<int(m_PdfsPar.size()));
+    auto k = m_PdfsPar[lpar];
+    assert(k<int(m_pdfs().size()));
+    if(k>=0) m_pdfs()[k]->CacheIntegral();
+    // nasty trick to avoid to add a new interface....
+    lmodPdf() = k;
   }
 
   virtual void CacheAllIntegral() {
@@ -153,19 +162,26 @@ private:
     } else 
       assert(N==k);
  
-
-    for (int l=0; l!=15; ++l) {
-      auto pdf = m_pdfs()[l];
-      pres[l] = m_resCache.GetData(l,dataOffset);
-      if (m_modPdfs[l]) { 
-	if (doNotCache) {
-	  pdf->GetVal(lres[l], bsize, data, dataOffset);
-	  pres[l] = &(lres[l][0]);
-	} else {
-	  pdf->GetVal(pres[l], bsize, data, dataOffset);
+    // form cache
+    for (int l=0; l!=15; ++l) { pres[l] = m_resCache.GetData(l,dataOffset);}
+ 
+     auto lp = lmodPdf();
+    if (lp>=0) {
+      m_pdfs()[lp]->GetVal(lres[lp], bsize, data, dataOffset);
+      pres[lp] = &(lres[lp][0]);
+      
+    } else if(lp!=-1)
+      for (int l=0; l!=15; ++l) {
+	auto pdf = m_pdfs()[l];
+	if (m_modPdfs[l]) { 
+	  if (doNotCache) {
+	    pdf->GetVal(lres[l], bsize, data, dataOffset);
+	    pres[l] = &(lres[l][0]);
+	  } else {
+	    pdf->GetVal(pres[l], bsize, data, dataOffset);
+	  }
 	}
       }
-    }
 
 
 
@@ -207,8 +223,14 @@ private:
   std::vector<bool> m_modPdfs; // pdf to be called
   std::vector<unsigned short> m_parPdfs; // index in vectors below
   std::vector<Variable*> m_AllParams;
-  std::vector<double> m_parCache; // cache of param (from  previous call)
   std::vector<short> m_PdfsPar;  // pdf corresponding to this par... (-1 is this)
+
+  std::vector<double> m_parCache; // cache of param (from  previous call)
+
+
+  int & lmodPdf() { return m_lmodPdf[omp_get_thread_num()];}
+  int  lmodPdf() const { return m_lmodPdf[omp_get_thread_num()];}
+  std::vector<int> m_lmodPdf;
 
   mutable Data m_resCache;
 

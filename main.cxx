@@ -37,7 +37,7 @@ std::string outputStatus(int status)
 
 double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data, 
 	     AbsPdf & model, bool runMinos,
-	     const char* label, int dynamic, bool docache)
+	     const char* label, int dynamic, bool docache, bool parderiv)
 {
   // Do the calculation
   std::cout << "Runs the algorithm with `" << label << "'" << std::endl;
@@ -76,25 +76,53 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
     int nvar=0;
     for ( auto ip=0U; ip!=pdfPars().size(); ++ip) if (!pdfPars()[ip]->IsConstant()) ++nvar;
     
-    Variable * var[nvar];
+    int var[nvar];
     int k=0;
-    for ( auto ip=0U; ip!=pdfPars().size(); ++ip) if (!pdfPars()[ip]->IsConstant()) var[k++]=pdfPars()[ip];
+    for ( auto ip=0U; ip!=pdfPars().size(); ++ip) if (!pdfPars()[ip]->IsConstant()) var[k++]= ip;
     assert(k==nvar);
-
+    
     // double delta[nvar], vup[nvar], vdown[nvar];
-
+    
     for (unsigned int i=0; i<Iter; i++) {
+      nll.GetVal();
       // fake computation of derivatives
-      for(int k=0; k!=nvar; ++k) {
-	auto v = var[k]->GetVal();
-	auto e = var[k]->GetError();
-	var[k]->SetAllVal(v+e);
-	value += nll.GetVal();
-	var[k]->SetAllVal(v-e);
-	value -= nll.GetVal();
-	var[k]->SetAllVal(v);
+      if (parderiv) {
+	// outer parallel...
+	std::atomic<int> ak(0);
+#pragma omp parallel reduction(+ : value)
+	{
+	  int ik=0;
+	  while(true) {
+	    if (ik>=nvar) break;
+	    while (ik<nvar && !std::atomic_compare_exchange_weak(&ak,&ik,ik+1)); 
+	    if (ik>=nvar) break;
+	    auto vr = pdfPars()[var[ik]];
+	    auto v = vr->GetVal();
+	    auto e = vr->GetError();
+	    vr->SetVal(v+e);
+	    value += nll.GetVal(var[ik]);
+	    vr->SetVal(v-e);
+	    value -= nll.GetVal(var[ik]);
+	    vr->SetVal(v);
+	    // now the integral is wrong fir this thread...
+	    nll.GetPdf()->CacheIntegral(var[ik]);
+	  }
+	} // end parallel section
       }
-      nEval+=2*nvar;
+      else {
+	for(int k=0; k!=nvar; ++k) {
+	  auto vr = pdfPars()[var[k]];
+	  auto v = vr->GetVal();
+	  auto e = vr->GetError();
+	  vr->SetAllVal(v+e);
+	  value += nll.GetVal();
+	  vr->SetAllVal(v-e);
+	  value -= nll.GetVal();
+	  vr->SetAllVal(v);
+	}
+      }
+
+      nEval+=2*nvar+1;
     }
   }
   else {
@@ -188,6 +216,7 @@ int main(int argc, char **argv)
     std::cout << "-a <int> to choose the algorithm to run: 0=OpenMP (default), 1=TBB, 2=Cilk\n";
     std::cout << "-d dynamic scheduling (0 by default >1 is number of groups)\n";
     std::cout << "-c use cache (false by default)\n";
+    std::cout << "-p compute derivative in parallel (false by default)\n";
 
     std::cout << std::endl;
     return 0;
@@ -199,8 +228,10 @@ int main(int argc, char **argv)
   //  const bool useMIC               = (FindOption(argc,argv,"-k")>=0);
   const unsigned int algo         = ReadIntOption(argc,argv,"-a",0);
   const int  dynamic              = ReadIntOption(argc,argv,"-d",0);
-  const bool docache              = (FindOption(argc,argv,"-c")>=0);
+  bool docache              = (FindOption(argc,argv,"-c")>=0);
+  const bool parderiv             = (FindOption(argc,argv,"-p")>=0);
 
+  if (parderiv) docache = true;
 
   const char* datafile = "data1M.dat";
 
@@ -264,7 +295,7 @@ int main(int argc, char **argv)
 
   // Do the calculation with OpenMP
   label = "OpenMP";
-  valueAlgo = DoNLL(Iter,blockSize,data,*model,runMinos,label.c_str(),dynamic,docache);
+  valueAlgo = DoNLL(Iter,blockSize,data,*model,runMinos,label.c_str(),dynamic,docache,parderiv);
 
   delete model;
 
