@@ -66,13 +66,13 @@ public:
     }
   }
   
-  virtual void CacheIntegral(){
+  void CacheIntegral(int lpar=-2) final {
     AbsPdf::CacheIntegral();
-    for (auto pdf : m_pdfs()) pdf->CacheIntegral();
+    for (auto pdf : m_pdfs()) pdf->CacheIntegral(lpar);
   }
  
 
-  virtual void CacheAllIntegral(){
+  void CacheAllIntegral() final {
     AbsPdf::CacheAllIntegral();
     for (auto pdf : m_pdfs()) pdf->CacheAllIntegral();
   }     

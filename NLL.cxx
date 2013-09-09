@@ -71,7 +71,7 @@ Double_t NLL::GetVal(int lpar) {
 Double_t NLL::GetVal(bool verify)
 {
 
-  if (verify&&docache) m_pdf->verifyCache();
+  if (docache) m_pdf->verifyCache(!verify);
 
   static bool first=true;
   if (first) {

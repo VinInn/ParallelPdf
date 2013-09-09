@@ -80,19 +80,26 @@ public:
     m_parCache.resize(m_AllParams.size());
   }
 
-  int verifyCache() {
+  int verifyCache(bool init) {
     for(auto & p : m_lmodPdf) p=-2;
-    // assumption: minuit either change one param or all...
     int n=0;
-    // here we should verify fractions....
-
-    // m_parPdfs[0] start of param first pdf
-     for ( auto k=0; k!=m_pdfs().size(); ++k ) {
-      m_modPdfs[k]=false;
-      for (int i = m_parPdfs[k]; i!=m_parPdfs[k+1]; ++i)
-	if (m_AllParams[i]->GetVal()!=m_parCache[i]) { m_modPdfs[k]=true; ++n; break;}
+    if (init) {
+      // actually just tell to initiale chaches
+      for ( auto k=0; k!=m_pdfs().size(); ++k ) m_modPdfs[k]=true;
+      doNotCache = false;
+      n = m_AllParams.size();
+    } else {
+      // assumption: minuit either change one param or all...
+      // here we should verify fractions....
+      
+      // m_parPdfs[0] start of param first pdf
+      for ( auto k=0; k!=m_pdfs().size(); ++k ) {
+	m_modPdfs[k]=false;
+	for (int i = m_parPdfs[k]; i!=m_parPdfs[k+1]; ++i)
+	  if (m_AllParams[i]->GetVal()!=m_parCache[i]) { m_modPdfs[k]=true; ++n; break;}
+      }
+      doNotCache= (n==1);
     }
-    doNotCache= (n==1);
     if (n>1) {  // resetCache
        // m_parPdfs[0] start of param first pdf
       for (int i = m_parPdfs.front(); i!=m_parPdfs.back(); ++i)
@@ -110,14 +117,14 @@ public:
  
   }
   
-  virtual void CacheIntegral(int lpar=-1) {
+  virtual void CacheIntegral(int lpar=-2) final {
     doNotCache=true;
     // thread local...
     AbsPdf::CacheIntegral();
     assert(lpar<int(m_PdfsPar.size()));
     auto k = m_PdfsPar[lpar];
     assert(k<int(m_pdfs().size()));
-    if(k>=0) m_pdfs()[k]->CacheIntegral();
+    if(k>=0) m_pdfs()[k]->CacheIntegral(lpar);
     // nasty trick to avoid to add a new interface....
     lmodPdf() = k;
   }
@@ -165,7 +172,7 @@ private:
     // form cache
     for (int l=0; l!=15; ++l) { pres[l] = m_resCache.GetData(l,dataOffset);}
  
-     auto lp = lmodPdf();
+    auto lp = lmodPdf();
     if (lp>=0) {
       m_pdfs()[lp]->GetVal(lres[lp], bsize, data, dataOffset);
       pres[lp] = &(lres[lp][0]);
@@ -235,7 +242,7 @@ private:
   mutable Data m_resCache;
 
   Bool_t m_isExtended;
-  bool doNotCache=false;
+  bool doNotCache=true;
  
 };
 

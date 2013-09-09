@@ -45,9 +45,9 @@ public:
   virtual ~PdfProd() { }
   
     
-  virtual void CacheIntegral(){
+  virtual void CacheIntegral(int lpar=-2) final {
     AbsPdf::CacheIntegral();
-    for (auto pdf : m_pdfs()) pdf->CacheIntegral();
+    for (auto pdf : m_pdfs()) pdf->CacheIntegral(lpar);
   }
  
 

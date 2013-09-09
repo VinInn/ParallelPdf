@@ -20,7 +20,7 @@ class AbsPdf : public Named {
 
   // FIXME all this needs a clean up
   virtual void makeCache(unsigned int){}
-  virtual int verifyCache(){ return 0;}
+  virtual int verifyCache(bool){ return 0;}
 
 
 
@@ -37,7 +37,7 @@ class AbsPdf : public Named {
   }
 
   // to be called inside parallel loop 
-  virtual void CacheIntegral(int lpar=-1) {
+  virtual void CacheIntegral(int lpar=-2) {
     m_InvIntegral[omp_get_thread_num()] = 1./integral();
   }
 

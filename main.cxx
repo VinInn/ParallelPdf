@@ -70,7 +70,8 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 #endif
     List<Variable> pdfPars;
     nll.GetPdf()->GetParameters(pdfPars);
-    nll.GetVal(false); // init cache if needed
+    auto v1 = nll.GetVal(false); // init cache if needed
+    auto v2 = nll.GetVal();
 
     // first count 
     int nvar=0;
@@ -80,14 +81,138 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
     int k=0;
     for ( auto ip=0U; ip!=pdfPars().size(); ++ip) if (!pdfPars()[ip]->IsConstant()) var[k++]= ip;
     assert(k==nvar);
-    
+   
+
+    if (!parderiv) {
+      {
+	auto vr = pdfPars()[var[0]];
+	auto v = vr->GetVal();
+	auto e = vr->GetError();
+	vr->SetAllVal(v-e);
+	auto v3 = nll.GetVal();
+	vr->SetAllVal(v+e);
+	auto v4 = nll.GetVal();
+	vr->SetAllVal(v);
+	//	auto v5 = nll.GetVal();
+	//auto v6 = nll.GetVal(false);
+	std::cout << "init test " 
+		  << v1 << " " 
+		  << v2 << " " 
+		  << v3 << " "  
+		  << v4 << " "
+	  //	  << v5 << " "
+	  //	  << v6 << "\n"
+		  << std::endl;
+      }
+      {
+	auto vr = pdfPars()[var[nvar-1]];
+	auto v = vr->GetVal();
+	auto e = vr->GetError();
+	vr->SetAllVal(v-e);
+	auto v3 = nll.GetVal();
+	vr->SetAllVal(v+e);
+	auto v4 = nll.GetVal();
+	vr->SetAllVal(v);
+	auto v5 = nll.GetVal();
+	auto v6 = nll.GetVal(false);
+	std::cout << "init test " 
+		  << v1 << " " 
+		  << v2 << " " 
+		  << v3 << " "  
+		  << v4 << " "
+		  << v5 << " "
+		  << v6 << "\n"
+		  << std::endl;
+      }
+    }else {
+      auto v3 = nll.GetVal(var[0]);
+      auto v4 = nll.GetVal(var[nvar-1]);
+      std::cout << "init test " 
+		<< v1 << " " 
+		<< v2 << " " 
+		<< v3 << " "  
+		<< v4 << " "
+		<< std::endl;
+      auto vr = pdfPars()[var[0]];
+      auto v = vr->GetVal();
+      auto e = vr->GetError();
+      vr->SetAllVal(v+e);
+      v1 = nll.GetVal();
+      vr->SetAllVal(v);
+      v2 = nll.GetVal();
+      vr->SetVal(v+e);
+      v3 = nll.GetVal(var[0]);
+      v4 = nll.GetVal(var[nvar-1]);
+      vr->SetVal(v);
+      std::cout << "init test " 
+		<< v1 << " " 
+		<< v2 << " " 
+		<< v3 << " "  
+		<< v4 << " "
+		<< std::endl;
+      vr = pdfPars()[var[nvar-1]];
+      v = vr->GetVal();
+      e = vr->GetError();
+      vr->SetAllVal(v+e);
+      v1 = nll.GetVal();
+      vr->SetAllVal(v);
+      v2 = nll.GetVal();
+      vr->SetVal(v+e);
+      v4 = nll.GetVal(var[nvar-1]);
+      v3 = nll.GetVal(var[0]);
+      vr->SetVal(v);
+      auto v5 = nll.GetVal();
+      std::cout << "init test " 
+		<< v1 << " " 
+		<< v2 << " " 
+		<< v3 << " "  
+		<< v4 << " "  
+		<< v5 << "\n"
+		<< std::endl;
+      
+      vr = pdfPars()[var[nvar-1]];
+      v = vr->GetVal();
+      e = vr->GetError();
+      vr->SetVal(v+e);
+      v3 = nll.GetVal(var[nvar-1]);
+      vr->SetVal(v-e);
+      v4 = nll.GetVal(var[nvar-1]);
+      vr->SetVal(v);
+      nll.GetPdf()->CacheIntegral(var[nvar-1]); // does not really matter as pdf cache is used...
+      vr = pdfPars()[var[0]];
+      v = vr->GetVal();
+      e = vr->GetError();
+      vr->SetVal(v+e);
+      v1 = nll.GetVal(var[0]);
+      vr->SetVal(v-e);
+      v2 = nll.GetVal(var[0]);
+      vr->SetVal(v);
+      nll.GetPdf()->CacheIntegral(var[0]);
+ 
+      v5 = nll.GetVal();
+      std::cout << "init test " 
+		<< v1 << " " 
+		<< v2 << " " 
+		<< v3 << " "  
+		<< v4 << " "  
+		<< v5 << "\n"
+		<< std::endl;
+      
+    }
+      
+
+
+
+
+
     // double delta[nvar], vup[nvar], vdown[nvar];
     
     for (unsigned int i=0; i<Iter; i++) {
-      nll.GetVal();
+      nll.GetVal(false);
       // fake computation of derivatives
       if (parderiv) {
 	// outer parallel...
+	std::atomic<int> ok[nvar];for ( auto & o : ok) o=0;
 	std::atomic<int> ak(0);
 #pragma omp parallel reduction(+ : value)
 	{
@@ -104,10 +229,12 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 	    vr->SetVal(v-e);
 	    value -= nll.GetVal(var[ik]);
 	    vr->SetVal(v);
-	    // now the integral is wrong fir this thread...
+	    // now the integral is wrong fir this thread...  (does not matter!)
 	    nll.GetPdf()->CacheIntegral(var[ik]);
+	    ok[ik]++;
 	  }
 	} // end parallel section
+	for ( auto const & o : ok) assert(1==o);
       }
       else {
 	for(int k=0; k!=nvar; ++k) {
