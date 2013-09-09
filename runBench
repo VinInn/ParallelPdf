@@ -1,90 +1,90 @@
-set max=2
+set max=10
 foreach i (`seq 1 1 ${max}`)
 set fout=oneStaticPinned.txt
 touch ${fout}
 setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -2000 | grep Time >> ${fout}
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -150 | grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -2000 -c | grep Time >> ${fout}
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -150 -c | grep Time >> ${fout}
 
 set fout=oneStaticUnPinned.txt
 touch ${fout}
 unsetenv GOMP_CPU_AFFINITY
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -2000 | grep Time >> ${fout}
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -150 | grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -2000 -c | grep Time >> ${fout}
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -150 -c | grep Time >> ${fout}
 
 set fout=oneDynamicPinned.txt
 touch ${fout}
 setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -2000 -d| grep Time >> ${fout}
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2| grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -2000 -d -c | grep Time >> ${fout}
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2 -c | grep Time >> ${fout}
 
 set fout=oneDynamicUnPinned.txt
 touch ${fout}
 unsetenv GOMP_CPU_AFFINITY
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -2000 -d| grep Time >> ${fout}
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2| grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -2000 -d -c | grep Time >> ${fout}
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2 -c | grep Time >> ${fout}
 
 
 set fout=halfStaticPinned.txt
 touch ${fout}
 setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -2000 | grep Time >> ${fout}
+taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -150 | grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -2000 -c | grep Time >> ${fout}
+taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -150 -c | grep Time >> ${fout}
 
 set fout=halfStaticUnPinned.txt
 touch ${fout}
 unsetenv GOMP_CPU_AFFINITY
-taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -2000 | grep Time >> ${fout}
+taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -150 | grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -2000 -c | grep Time >> ${fout}
+taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -150 -c | grep Time >> ${fout}
 
 set fout=halfDynamicPinned.txt
 touch ${fout}
 setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -2000 -d| grep Time >> ${fout}
+taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2| grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -2000 -d -c | grep Time >> ${fout}
+taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2 -c | grep Time >> ${fout}
 
 set fout=halfDynamicUnPinned.txt
 touch ${fout}
 unsetenv GOMP_CPU_AFFINITY
-taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -2000 -d| grep Time >> ${fout}
+taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2| grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -2000 -d -c | grep Time >> ${fout}
+taskset -c 0-7 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2 -c | grep Time >> ${fout}
 
 
 set fout=splitStaticPinned.txt
 touch ${fout}
 setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -2000 | grep Time >> ${fout}
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -150 | grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -2000 -c | grep Time >> ${fout}
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -150 -c | grep Time >> ${fout}
 
 set fout=splitStaticUnPinned.txt
 touch ${fout}
 unsetenv GOMP_CPU_AFFINITY
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -2000 | grep Time >> ${fout}
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -150 | grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -2000 -c | grep Time >> ${fout}
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -150 -c | grep Time >> ${fout}
 
 set fout=splitDynamicPinned.txt
 touch ${fout}
 setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -2000 -d| grep Time >> ${fout}
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2| grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -2000 -d -c | grep Time >> ${fout}
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2 -c | grep Time >> ${fout}
 
 set fout=splitDynamicUnPinned.txt
 touch ${fout}
 unsetenv GOMP_CPU_AFFINITY
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -2000 -d| grep Time >> ${fout}
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2| grep Time >> ${fout}
 set fout = chached_${fout}
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -2000 -d -c | grep Time >> ${fout}
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -e -i -150 -d 2 -c | grep Time >> ${fout}
 
 
 
