@@ -41,6 +41,8 @@ class Data : public Named {
   void Push_back();
   inline UInt_t GetEntries() const { return m_size; }
 
+  bool empty() const { return m_data==nullptr;}
+
   Bool_t Get(UInt_t iEvent);
 
   Value_t const * GetData(const Variable &var, unsigned int dataOffset) const {

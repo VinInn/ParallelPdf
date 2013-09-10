@@ -170,7 +170,10 @@ private:
       assert(N==k);
  
     // form cache
-    for (int l=0; l!=15; ++l) { pres[l] = m_resCache.GetData(l,dataOffset);}
+    auto lnocache = doNotCache;
+    if (m_resCache.empty()) lnocache=true;
+    else
+      for (int l=0; l!=15; ++l) { pres[l] = m_resCache.GetData(l,dataOffset);}
  
     auto lp = lmodPdf();
     if (lp>=0) {
@@ -181,7 +184,7 @@ private:
       for (int l=0; l!=15; ++l) {
 	auto pdf = m_pdfs()[l];
 	if (m_modPdfs[l]) { 
-	  if (doNotCache) {
+	  if (lnocache) {
 	    pdf->GetVal(lres[l], bsize, data, dataOffset);
 	    pres[l] = &(lres[l][0]);
 	  } else {
