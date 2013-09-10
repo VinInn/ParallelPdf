@@ -212,29 +212,35 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
       // fake computation of derivatives
       if (parderiv) {
 	// outer parallel...
+	auto nloops = 2*nvar;
 	std::atomic<int> ok[nvar];for ( auto & o : ok) o=0;
-	std::atomic<int> ak(0);
+	std::atomic<int> al(0);
 #pragma omp parallel reduction(+ : value)
 	{
-	  int ik=0;
+	  int il=0;
 	  while(true) {
-	    if (ik>=nvar) break;
-	    while (ik<nvar && !std::atomic_compare_exchange_weak(&ak,&ik,ik+1)); 
-	    if (ik>=nvar) break;
+	    if (il>=nloops) break;
+	    while (il<nloops && !std::atomic_compare_exchange_weak(&al,&il,il+1)); 
+	    if (il>=nloops) break;
+	    auto ik = il/2; // hope optmize in >1
+	    bool pm = 0 == il%2;  // hope optmize in &1
 	    auto vr = pdfPars()[var[ik]];
 	    auto v = vr->GetVal();
 	    auto e = vr->GetError();
-	    vr->SetVal(v+e);
-	    value += nll.GetVal(var[ik]);
-	    vr->SetVal(v-e);
-	    value -= nll.GetVal(var[ik]);
+	    auto nv = pm ? v+e : v-e;
+	    vr->SetVal(nv);
+	    if (pm) 
+	      value += nll.GetVal(var[ik]);
+	    else 
+	      value -= nll.GetVal(var[ik]);
+
 	    vr->SetVal(v);
 	    // now the integral is wrong fir this thread...  (does not matter!)
 	    nll.GetPdf()->CacheIntegral(var[ik]);
 	    ok[ik]++;
 	  }
 	} // end parallel section
-	for ( auto const & o : ok) assert(1==o);
+	for ( auto const & o : ok) assert(2==o);
       }
       else {
 	for(int k=0; k!=nvar; ++k) {
