@@ -27,6 +27,10 @@ class NLL : public Named {
 
 
   inline AbsPdf *GetPdf() { return m_pdf; }
+  void makeCache() { 
+    if (docache) m_pdf->makeCache(dataSize());
+  }
+
 
   inline void SetBlockEventsSize(UInt_t nBlockEvents) {
     m_nBlockEvents = nBlockEvents; 

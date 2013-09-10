@@ -66,7 +66,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
   if (Iter>0) {
 #ifndef  DO_MINUIT
     // done in minimizer
-    if (docache) nll.GetPdf()->makeCache(data.size());
+    nll.makeCache();
 #endif
     List<Variable> pdfPars;
     nll.GetPdf()->GetParameters(pdfPars);

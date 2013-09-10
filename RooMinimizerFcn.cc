@@ -17,7 +17,7 @@ RooMinimizerFcn::RooMinimizerFcn(NLL& nll) :
       _pars.Add(par->GetName(),par->GetVal(),par->GetError(),par->GetMin(),par->GetMax());
     }
   }
-  m_nll->GetPdf()->makeCache(m_nll->dataSize());
+  m_nll->makeCache();
   m_nll->GetVal(false); // init cache if needed
 }
 
