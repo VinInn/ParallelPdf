@@ -3,15 +3,15 @@
 
 Data::Data(const Char_t* name, const Char_t* title, UInt_t size,
 	   List<Variable> &vars) :
-  Named(name,title), m_vars(vars()), m_stride(stride(size))
+  Named(name,title), m_vars(vars()), m_stride(stride(size)), m_capacity(vars.GetSize()*m_stride)
 {
-  m_data = (Value_t*)memalign(ALIGNMENT,vars.GetSize()*m_stride*sizeof(Value_t));
+  m_data = (Value_t*)memalign(ALIGNMENT, m_capacity*sizeof(Value_t));
 }
 
 Data::Data(const Char_t* name, const Char_t* title, UInt_t size, UInt_t nvars) :
-Named(name,title), m_stride(stride(size)) {
+  Named(name,title), m_stride(stride(size)), m_capacity(nvars*m_stride) {
 
-  m_data = (Value_t*)memalign(ALIGNMENT,nvars*m_stride*sizeof(Value_t));
+  m_data = (Value_t*)memalign(ALIGNMENT,m_capacity*sizeof(Value_t));
 
 }
 

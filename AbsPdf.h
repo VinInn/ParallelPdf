@@ -21,7 +21,7 @@ class AbsPdf : public Named {
   // FIXME all this needs a clean up
   virtual void makeCache(unsigned int){}
   virtual int verifyCache(bool){ return 0;}
-
+  virtual unsigned int cacheSize() const { return 0;}
 
 
   virtual void RandomizeFloatParameters();

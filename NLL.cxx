@@ -37,6 +37,8 @@ NLL::~NLL() {
     std::cout << std::endl;
   }
 
+  std::cout << "\nCache size " << m_pdf->cacheSize() << std::endl;
+
 }
 
 

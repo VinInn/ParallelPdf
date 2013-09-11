@@ -20,13 +20,17 @@ class Data : public Named {
   Data(const Data&) = delete;
   Data & operator=(const Data&) = delete;
   
-  Data(Data&& rh) : Named(rh.GetName(),rh.GetTitle()), m_vars(std::move(rh.m_vars)), m_data(rh.m_data), m_stride(rh.m_stride), m_size(rh.m_size){ rh.m_data=0;}
+  Data(Data&& rh) : Named(rh.GetName(),rh.GetTitle()), 
+		    m_vars(std::move(rh.m_vars)), m_data(rh.m_data), 
+		    m_stride(rh.m_stride), m_size(rh.m_size),
+		    m_capacity(rh.m_capacity) { rh.m_data=nullptr;}
   Data & operator=(Data&& rh) {
     Named::operator=(rh);
     std::swap(m_vars,rh.m_vars);
     std::swap(m_data,rh.m_data);
     std::swap(m_stride,rh.m_stride);
     std::swap(m_size,rh.m_size);
+    std::swap(m_capacity, rh.m_capacity);
     return *this;
   } 
   
@@ -37,6 +41,7 @@ class Data : public Named {
   virtual ~Data();
 
   unsigned int size() const { return m_size; }
+  unsigned int capacity() const { return m_capacity;}
 
   void Push_back();
   inline UInt_t GetEntries() const { return m_size; }
@@ -68,6 +73,7 @@ class Data : public Named {
 
   unsigned int m_stride=0;
   unsigned int m_size=0;
+  unsigned int m_capacity=0;
 
 };
 

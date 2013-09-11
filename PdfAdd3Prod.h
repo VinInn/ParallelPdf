@@ -136,7 +136,9 @@ public:
       if(m_modPdfs[k]) m_pdfs()[k]->CacheAllIntegral();
   }
   
-
+  unsigned int cacheSize() const final { 
+    return m_resCache.capacity();
+  }
 
 private:
 
