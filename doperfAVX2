@@ -1,0 +1,2 @@
+perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e r180010e -e r180ffa1 -e cache-misses -e cache-references -e branch-misses -e r0151 -e r0280 -e r0408 -e r0485 ./main_XEON -n 800000 -b 512 -c -d 2 -i 200
+
