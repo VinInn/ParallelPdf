@@ -374,6 +374,8 @@ int main(int argc, char **argv)
   Variable z("z","",-3,1.5); // Fisher
   List<Variable> variables(x,y,z);
 
+  Data::nPartions=std::max(1,dynamic);
+
   // Fill the data
   Data data("data","",N,variables);
 

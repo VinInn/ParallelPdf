@@ -106,9 +106,15 @@ CXXLIST := $(filter-out $(MAIN).cxx,$(wildcard *.cxx))
 HHLIST  := $(filter-out common.h, $(patsubst %.cxx,%.h,$(CXXLIST)))
 OBJLIST := $(patsubst %.cxx,$(DIR)/%.o,$(CXXLIST))
 
-.SUFFIXES: .cxx .o .h .so
+.SUFFIXES: .cxx .o .h .so .cpp
+
+.PHONY: tests
+
 
 all: $(MAIN)_$(DIR)
+
+tests: tests/Data_t
+
 
 $(DIR)/%.o: %.cxx %.h
 	@echo "Compiling $<"
@@ -123,8 +129,14 @@ $(MAIN)_$(DIR): $(MAIN).cxx $(LIB) models/*.h
 	@echo "Making executable..."
 	$(CXX) $(CXXFLAGS) $(CXXWARN) $(OPENMP) $(ROOTINC) $(INCLUDE) $(ROOTLIB) $(SOLIBS) $<  ./$(LIB) -o $@ $(LDFLAGS)
 
+tests/%: %.cpp
+	@echo "Building test $<"
+	@mkdir -p tests
+	$(CXX) $(CXXFLAGS) $(CXXWARN) $(OPENMP) $(ROOTINC) $(INCLUDE) $(ROOTLIB) $(SOLIBS) $<  ./$(LIB) -o $@ $(LDFLAGS)
+
+
 valgrind:
 	valgrind --tool=callgrind --simulate-cache=yes --collect-jumps=yes --separate-threads=yes --simulate-hwpref=yes --cacheuse=yes ./main -n 100000
 
 clean:
-	rm -rf *~ */*~ *.o *.out *.xnlog $(LIB) $(MAIN)_$(DIR) *.inc *.pomp.* $(DIR)/
+	rm -rf *~ */*~ *.o *.out *.xnlog $(LIB) $(MAIN)_$(DIR) *.inc *.pomp.* $(DIR)/ tests/
