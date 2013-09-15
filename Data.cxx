@@ -1,6 +1,9 @@
 #include "Data.h"
 #include "Partitioner.h"
 
+#ifdef NUMACTL
+#include <numa.h>
+#endif
 
 size_t Data::nPartions=1;
 
@@ -29,18 +32,36 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
       m_start[me]=0;
   }
 */
+/*
+  for (auto me = 0U; me!=nPartions; ++me) {
+      int ls=0; int le=0;
+      auto nev = Partitioner::GetElements(nPartions,me,size,ls,le);
+      m_stride[me] = stride(nev);
+      m_capacity[me]= nvars*m_stride[me];
+      m_data[me]= (Value_t*)memalign(ALIGNMENT,m_capacity[me]*sizeof(Value_t));
+      m_start[me]=ls;
+  }
+
+*/
 #pragma omp parallel
   {
     // assume each thread will allocate in its own NUMA side
     // select one for each partion
     bool t0 = 0== omp_get_thread_num()%(omp_get_num_threads()/nPartions);
     if (t0) {
+#ifdef NUMACTL
+      numa_setlocal_memory();
+#endif
       auto me = partition();
       int ls=0; int le=0;
       auto nev = Partitioner::GetElements(nPartions,me,size,ls,le);
       m_stride[me] = stride(nev); 
-      m_capacity[me]= nvars*m_stride[me]; 
+      m_capacity[me]= nvars*m_stride[me];
+#ifdef NUMACTL
+      m_data[me]= (Value_t*)numa_alloc(m_capacity[me]*sizeof(Value_t));
+#else
       m_data[me]= (Value_t*)memalign(ALIGNMENT,m_capacity[me]*sizeof(Value_t));
+#endif
       m_start[me]=ls;
     }
 
@@ -49,8 +70,11 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
 }
 
 
+#ifdef NUMACTL
+Data::~Data() { for(auto d:m_data) numa_free(d); }
+#else
 Data::~Data() { for(auto d:m_data) free(d); }
-
+#endif
 
 
 void Data::Push_back()
