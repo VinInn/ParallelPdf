@@ -348,7 +348,7 @@ int main(int argc, char **argv)
     //    std::cout << "-k to run on MIC, offload mode (false by default)\n";
     std::cout << "-d dynamic scheduling (0 by default >1 is number of groups)\n";
     std::cout << "-c use cache (false by default)\n";
-    std::cout << "-a numa affinity (1 by default; otherwise is number of partitions)\n";
+    std::cout << "-a numa affinity (0 by default; otherwise is number of partitions)\n";
     std::cout << "-p compute derivative in parallel (false by default)\n";
 
     std::cout << std::endl;
@@ -362,7 +362,7 @@ int main(int argc, char **argv)
   const int  dynamic              = ReadIntOption(argc,argv,"-d",0);
   bool docache              = (FindOption(argc,argv,"-c")>=0);
   const bool parderiv             = (FindOption(argc,argv,"-p")>=0);
-  int numa                  = ReadIntOption(argc,argv,"-a",1);
+  int numa                  = ReadIntOption(argc,argv,"-a",0);
 
   if (parderiv) docache = true;
 
@@ -374,7 +374,7 @@ int main(int argc, char **argv)
   Variable z("z","",-3,1.5); // Fisher
   List<Variable> variables(x,y,z);
 
-  Data::nPartions=std::max(1,numa);
+  Data::nPartions=numa;
 
   // Fill the data
   Data data("data","",N,variables);

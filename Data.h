@@ -19,6 +19,7 @@ class Data final : public Named {
   // using Value_t = float;
 
   static size_t nPartions;
+  static size_t inPart() { return std::max(size_t(1),nPartions);}
 
   Data(){}
   Data(const Data&) = delete;
@@ -62,16 +63,16 @@ class Data final : public Named {
   Value_t const * data() const { return m_data[partition()];}
 
   size_t partition() const {
-    auto ig =  omp_get_thread_num()/(omp_get_num_threads()/nPartions);
-    assert(ig<nPartions);
+    auto ig =  omp_get_thread_num()/(omp_get_num_threads()/inPart());
+    assert(ig<inPart());
     return ig;
   }
 
   // find in which partition is this event
   size_t partition(unsigned int nev) const {
-    for ( auto i=nPartions; i!=0; --i)
+    for ( auto i=inPart(); i!=0; --i)
       if (nev>=m_start[i-1]) return i-1;
-    return nPartions;
+    return inPart();
   }
 
 
