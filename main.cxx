@@ -205,18 +205,23 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 
 
 
-    // double delta[nvar], vup[nvar], vdown[nvar];
     
     for (unsigned int i=0; i<Iter; i++) {
       nll.GetVal(false);
       // fake computation of derivatives
+      double delta[nvar]={0,}, vup[nvar]={0,}, vdown[nvar]={0,};
+
       if (parderiv) {
 	// outer parallel...
 	auto nloops = 2*nvar;
 	std::atomic<int> ok[nvar];for ( auto & o : ok) o=0;
-	std::atomic<int> al(0);
-#pragma omp parallel reduction(+ : value)
+	std::atomic<int> alP[Data::inPart()]; for ( auto & o : alP) o=0;
+#pragma omp parallel
 	{
+	  auto par = Data::partition();
+	  auto start = data.startP();
+	  auto size   = data.sizeP();
+	  std::atomic<int> & al = alP[par]; 
 	  int il=0;
 	  while(true) {
 	    if (il>=nloops) break;
@@ -230,9 +235,9 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 	    auto nv = pm ? v+e : v-e;
 	    vr->SetVal(nv);
 	    if (pm) 
-	      value += nll.GetVal(var[ik]);
+	      nll.GetVal(var[ik],vup[ik]);
 	    else 
-	      value -= nll.GetVal(var[ik]);
+	      nll.GetVal(var[ik],vdown[ik]);
 
 	    vr->SetVal(v);
 	    // now the integral is wrong fir this thread...  (does not matter!)
@@ -240,7 +245,9 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 	    ok[ik]++;
 	  }
 	} // end parallel section
-	for ( auto const & o : ok) assert(2==o);
+	for ( auto const & o : ok) assert(2*Data::inPart()==o);
+	for (auto v: vup) value+=v;
+	for (auto v: vdown) value-=v;
       }
       else {
 	for(int k=0; k!=nvar; ++k) {

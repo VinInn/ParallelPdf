@@ -62,11 +62,20 @@ class Data final : public Named {
   Value_t * data() { return m_data[partition()];}
   Value_t const * data() const { return m_data[partition()];}
 
-  size_t partition() const {
+  static size_t partition() {
     auto ig =  omp_get_thread_num()/(omp_get_num_threads()/inPart());
     assert(ig<inPart());
     return ig;
   }
+
+  size_t startP() const {
+    return m_start[partition()];
+  }
+
+  size_t sizeP() const {
+    return m_size[partition()];
+  }
+
 
   // find in which partition is this event
   size_t partition(unsigned int nev) const {

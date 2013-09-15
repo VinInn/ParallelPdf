@@ -43,28 +43,31 @@ NLL::~NLL() {
 
 
 
-Double_t NLL::GetVal(int lpar) {
+
+void  NLL::GetVal(int lpar, double & ret) {
   // assume to be in a thread..
 
   auto ntot = m_data->GetEntries();
+  auto par = Data::partition();
+  auto start =  m_data->startP();
+  auto size   =  m_data->sizeP();
+
 
   m_pdf->CacheIntegral(lpar);
 
 
   alignas(ALIGNMENT) double res[m_nBlockEvents];
   TMath::IntLog localValue;
-  for (auto ie=0U; ie<ntot; ie+= m_nBlockEvents) {
+  for (auto ie=start; ie<start+size; ie+= m_nBlockEvents) {
     auto offset = ie;
-    auto bsize = std::min(m_nBlockEvents,ntot-ie);
+    auto bsize = std::min(size_t(m_nBlockEvents),ntot-ie);
     m_pdf->GetVal(res, bsize, *m_data, offset);  
     PartialNegReduction(localValue,res,bsize);
   }
-  auto ret = -0.693147182464599609375*localValue.value();
+  ret += -0.693147182464599609375*localValue.value();
 
-  if (m_pdf->IsExtended())
-    ret += m_pdf->ExtendedTerm(m_data->GetEntries());
-
-  return ret;
+  if (par==0 && m_pdf->IsExtended())
+    ret += m_pdf->ExtendedTerm(ntot);
 
 
 }
