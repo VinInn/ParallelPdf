@@ -59,7 +59,15 @@ set comm = 'numactl -C 0-3,8-11 ./main_XEON -n 768000 -b 512 -i -150 -p -a 2'
 echo $comm
 $comm | grep Time
 
-set comm = 'numactl -C 0-15 ./main_XEON -n 768000 -b 512 -i -150 -p'
+set comm = 'numactl -C 0-15 ./main_XEON -n 768000 -b 512 -i -150 -p -a 0'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-15 ./main_XEON -n 768000 -b 512 -i -150 -p -a 1'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-15 ./main_XEON -n 768000 -b 512 -i -150 -p -a 2'
 echo $comm
 $comm | grep Time
 

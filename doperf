@@ -121,7 +121,7 @@ grep -A20 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$
 
 
 echo "|${nev} |${aff} |ParFull |"
-taskset -c 0-15 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+taskset -c 0-31 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
  -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
 -e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
 ./main_XEON -n ${nev} -b 512 -p -i 200 |& \
