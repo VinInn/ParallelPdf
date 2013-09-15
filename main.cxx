@@ -348,7 +348,7 @@ int main(int argc, char **argv)
     //    std::cout << "-k to run on MIC, offload mode (false by default)\n";
     std::cout << "-d dynamic scheduling (0 by default >1 is number of groups)\n";
     std::cout << "-c use cache (false by default)\n";
-    std::cout << "-a numa affinity (by default 1; otherwise is number of partitions)\n";
+    std::cout << "-a numa affinity (1 by default; otherwise is number of partitions)\n";
     std::cout << "-p compute derivative in parallel (false by default)\n";
 
     std::cout << std::endl;

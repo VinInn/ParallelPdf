@@ -19,7 +19,16 @@ Data::Data(const Char_t* name, const Char_t* title, UInt_t size, UInt_t nvars) :
 }
 
 void Data::allocate(UInt_t size, UInt_t nvars) {
-
+/*
+  if ( 1==nPartions ) {
+      auto  nev = size;
+      auto me = 0U;
+      m_stride[me] = stride(nev); 
+      m_capacity[me]= nvars*m_stride[me]; 
+      m_data[me]= (Value_t*)memalign(ALIGNMENT,m_capacity[me]*sizeof(Value_t));
+      m_start[me]=0;
+  }
+*/
 #pragma omp parallel
   {
     // assume each thread will allocate in its own NUMA side
@@ -36,7 +45,7 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
     }
 
   }
-  
+
 }
 
 
