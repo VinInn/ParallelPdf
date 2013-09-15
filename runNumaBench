@@ -1,66 +1,67 @@
+#source runNumaBench | sed 'N;s/\n/ /' > numabench.res
 set max=10
 foreach i (`seq 1 1 ${max}`)
 
-set fout=oneStatic.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c | grep Time >> ${fout}
+set fout=oneStatic
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-31'
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c | grep Time | awk '{ print $NF }' 
 
-set fout=oneStaticNuma.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -a 2| grep Time >> ${fout}
+set fout=oneStaticNuma
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-31'
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -a 2| grep Time | awk '{ print $NF }' 
 
-set fout=oneDynamic.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2| grep Time >> ${fout}
+set fout=oneDynamic
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-31'
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2| grep Time | awk '{ print $NF }' 
 
-set fout=oneDynamicNuma.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2 -a 2| grep Time >> ${fout}
-
-
-set fout=splitStatic.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c | grep Time >> ${fout}
-
-set fout=splitStaticNuma.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -a 2| grep Time >> ${fout}
+set fout=oneDynamicNuma
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-31'
+taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2 -a 2| grep Time | awk '{ print $NF }' 
 
 
-set fout=splitDynamic.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2| grep Time >> ${fout}
+set fout=splitStatic
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-31'
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c | grep Time | awk '{ print $NF }' 
 
-set fout=splitDynamicNuma.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-31"
-taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2 -a 2| grep Time >> ${fout}
+set fout=splitStaticNuma
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-31'
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -a 2| grep Time | awk '{ print $NF }' 
 
-set fout=fullStatic.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-7 16-23 8-15 24-31"
-taskset -c 0-31 ./main_XEON -n 800000 -b 512 -i -150 -c | grep Time >> ${fout}
 
-set fout=fullStaticNuma.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-7 16-23 8-15 24-31"
-taskset -c 0-31 ./main_XEON -n 800000 -b 512 -i -150 -c -a 2| grep Time >> ${fout}
+set fout=splitDynamic
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-31'
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2| grep Time | awk '{ print $NF }' 
 
-set fout=fullDynamic.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-7 16-23 8-15 24-31"
-taskset -c 0-31 ./main_XEON -n 800000 -b 512 -i -150 -d 2 -c | grep Time >> ${fout}
+set fout=splitDynamicNuma
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-31'
+taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2 -a 2| grep Time | awk '{ print $NF }' 
 
-set fout=fullDynamicNuma.txt
-touch ${fout}
-setenv GOMP_CPU_AFFINITY "0-7 16-23 8-15 24-31"
-taskset -c 0-31 ./main_XEON -n 800000 -b 512 -i -150 -d 2 -c -a 2| grep Time >> ${fout}
+set fout=fullStatic
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-7 16-23 8-15 24-31'
+taskset -c 0-31 ./main_XEON -n 800000 -b 512 -i -150 -c | grep Time | awk '{ print $NF }' 
+
+set fout=fullStaticNuma
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-7 16-23 8-15 24-31'
+taskset -c 0-31 ./main_XEON -n 800000 -b 512 -i -150 -c -a 2| grep Time | awk '{ print $NF }' 
+
+set fout=fullDynamic
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-7 16-23 8-15 24-31'
+taskset -c 0-31 ./main_XEON -n 800000 -b 512 -i -150 -d 2 -c | grep Time | awk '{ print $NF }' 
+
+set fout=fullDynamicNuma
+echo ${fout}
+setenv GOMP_CPU_AFFINITY '0-7 16-23 8-15 24-31'
+taskset -c 0-31 ./main_XEON -n 800000 -b 512 -i -150 -d 2 -c -a 2| grep Time | awk '{ print $NF }' 
 
 end

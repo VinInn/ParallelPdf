@@ -1,0 +1,65 @@
+setenv GOMP_CPU_AFFINITY '0-31'
+
+set comm = 'numactl -C 0-7 ./main_XEON -n 768000 -b 512 -i -150 -c'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-7 -m 0 ./main_XEON -n 768000 -b 512 -i -150 -c'
+echo $comm                                                 
+$comm | grep Time
+
+
+set comm = 'numactl -C 0-7 -m 1 ./main_XEON -n 768000 -b 512 -i -150 -c'
+echo $comm
+$comm | grep Time
+
+
+set comm = 'numactl -C 0-3,8-11 ./main_XEON -n 768000 -b 512 -i -150 -c'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 -m 0 ./main_XEON -n 768000 -b 512 -i -150 -c'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 -m 1 ./main_XEON -n 768000 -b 512 -i -150 -c'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 --interleave=0,1 ./main_XEON -n 768000 -b 512 -i -150 -c'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 --localalloc ./main_XEON -n 768000 -b 512 -i -150 -c'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 ./main_XEON -n 768000 -b 512 -i -150 -c -a 1'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 ./main_XEON -n 768000 -b 512 -i -150 -c -a 2'
+echo $comm
+$comm | grep Time
+
+
+set comm = 'numactl -C 0-7 ./main_XEON -n 768000 -b 512 -i -150 -p'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 ./main_XEON -n 768000 -b 512 -i -150 -p -a 0'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 ./main_XEON -n 768000 -b 512 -i -150 -p -a 1'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-3,8-11 ./main_XEON -n 768000 -b 512 -i -150 -p -a 2'
+echo $comm
+$comm | grep Time
+
+set comm = 'numactl -C 0-15 ./main_XEON -n 768000 -b 512 -i -150 -p'
+echo $comm
+$comm | grep Time
+
