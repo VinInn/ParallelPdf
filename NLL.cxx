@@ -44,14 +44,20 @@ NLL::~NLL() {
 
 
 
-void  NLL::GetVal(int lpar, double & ret) {
+double  NLL::GetVal(int lpar) {
   // assume to be in a thread..
 
   auto ntot = m_data->GetEntries();
-  auto par = Data::partition();
-  auto start =  m_data->startP();
-  auto size   =  m_data->sizeP();
+  auto par = 0U;
+  auto start =0U;
+  auto size   =  ntot;
 
+  // a hack
+  if ( OpenMP::IsInParallel()) {
+    par = Data::partition();
+    start =  m_data->startP();
+    size   =  m_data->sizeP();
+  }
 
   m_pdf->CacheIntegral(lpar);
 
@@ -60,16 +66,16 @@ void  NLL::GetVal(int lpar, double & ret) {
   TMath::IntLog localValue;
   for (auto ie=start; ie<start+size; ie+= m_nBlockEvents) {
     auto offset = ie;
-    auto bsize = std::min(size_t(m_nBlockEvents),start+size-ie);
+    auto bsize = std::min(m_nBlockEvents,(start+size)-ie);
     m_pdf->GetVal(res, bsize, *m_data, offset);  
     PartialNegReduction(localValue,res,bsize);
   }
-  ret += -0.693147182464599609375*localValue.value();
+  auto ret = -0.693147182464599609375*localValue.value();
 
   if (par==0 && m_pdf->IsExtended())
     ret += m_pdf->ExtendedTerm(ntot);
 
-
+  return ret;
 }
 
 

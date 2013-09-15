@@ -4,6 +4,7 @@
 
 #include "Partitioner.h"
 #include "omp.h"
+#include <algorithm>
 
 namespace OpenMP {
 
@@ -12,7 +13,7 @@ namespace OpenMP {
   }
 
   inline int GetNumThreads() {
-    return omp_get_num_threads();
+    return std::max(1,omp_get_num_threads());
   }
   
   inline int GetRankThread() {

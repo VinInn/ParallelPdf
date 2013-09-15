@@ -63,7 +63,7 @@ class Data final : public Named {
   Value_t const * data() const { return m_data[partition()];}
 
   static size_t partition() {
-    auto ig =  omp_get_thread_num()/(omp_get_num_threads()/inPart());
+    auto ig =  omp_get_thread_num()/(OpenMP::GetNumThreads()/inPart());
     assert(ig<inPart());
     return ig;
   }

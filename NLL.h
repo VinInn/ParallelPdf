@@ -23,7 +23,7 @@ class NLL : public Named {
   Double_t GetVal(bool verify=true);
 
   // assume only lpar changed (as in derivatives); sequential
-  void GetVal(int lpar, double & ret);
+  double GetVal(int lpar);
 
 
   inline AbsPdf *GetPdf() { return m_pdf; }
