@@ -60,7 +60,7 @@ void  NLL::GetVal(int lpar, double & ret) {
   TMath::IntLog localValue;
   for (auto ie=start; ie<start+size; ie+= m_nBlockEvents) {
     auto offset = ie;
-    auto bsize = std::min(size_t(m_nBlockEvents),ntot-ie);
+    auto bsize = std::min(size_t(m_nBlockEvents),start+size-ie);
     m_pdf->GetVal(res, bsize, *m_data, offset);  
     PartialNegReduction(localValue,res,bsize);
   }
