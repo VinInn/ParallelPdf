@@ -18,8 +18,8 @@ class Data final : public Named {
   using Value_t = double;
   // using Value_t = float;
 
-  static size_t nPartions;
-  static size_t inPart() { return std::max(size_t(1),nPartions);}
+  static int nPartions;
+  static size_t inPart() { return std::max(size_t(1),size_t(std::abs(nPartions)));}
 
   Data(){}
   Data(const Data&) = delete;

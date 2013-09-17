@@ -5,7 +5,7 @@
 #include <numa.h>
 #endif
 
-size_t Data::nPartions=0;
+int Data::nPartions=0;
 
 Data::Data(const Char_t* name, const Char_t* title, UInt_t size,
 	   List<Variable> &vars) :
@@ -33,24 +33,25 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
       return;
   }
 
-/*
-  for (auto me = 0U; me!=inPart(); ++me) {
+  if ( 0>nPartions ) {
+    for (auto me = 0U; me!=inPart(); ++me) {
       int ls=0; int le=0;
       auto nev = Partitioner::GetElements(inPart(),me,size,ls,le);
       m_stride[me] = stride(nev);
       m_capacity[me]= nvars*m_stride[me];
       m_data[me]= (Value_t*)memalign(ALIGNMENT,m_capacity[me]*sizeof(Value_t));
-     // force the OS to allocate physical memory for the region
-     // memset(m_data[me], -1, m_capacity[me]*sizeof(Value_t));
-     m_start[me]=ls;
+      // force the OS to allocate physical memory for the region
+      // memset(m_data[me], -1, m_capacity[me]*sizeof(Value_t));
+      m_start[me]=ls;
+    }
+    return;
   }
 
-*/
 #pragma omp parallel
   {
     // assume each thread will allocate in its own NUMA side
     // select one for each partion
-    bool t0 = 0== omp_get_thread_num()%(omp_get_num_threads()/inPart());
+    bool t0 = 0== omp_get_thread_num()%(OpenMP::GetNumThreads()/inPart());
     if (t0) {
 #ifdef NUMACTL
       numa_setlocal_memory();
