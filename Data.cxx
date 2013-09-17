@@ -41,8 +41,13 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
       m_capacity[me]= nvars*m_stride[me];
       m_data[me]= (Value_t*)memalign(ALIGNMENT,m_capacity[me]*sizeof(Value_t));
       // force the OS to allocate physical memory for the region
-      // memset(m_data[me], -1, m_capacity[me]*sizeof(Value_t));
+      memset(m_data[me], -1, m_capacity[me]*sizeof(Value_t));
       m_start[me]=ls;
+      // mess up the interleave (DOES NOT)
+      //if (me==0U) {
+      // auto pp = (Value_t*)memalign(ALIGNMENT,m_capacity[me]*sizeof(Value_t));
+      // memset(pp, -1, m_capacity[me]*sizeof(Value_t));
+      //}
     }
     return;
   }
