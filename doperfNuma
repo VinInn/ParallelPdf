@@ -1,0 +1,126 @@
+#head -n1 perfstat.res | sed 's/|//g'; cat perfstat.res | tail -168 | xargs -n 18 | sed 's/|//g'
+#sed 'N;s/\n/ /' perfstat.res
+
+echo "|n-events | Affinity | Job-type | CPU-CPU | task-clock | cycles | instructions | stalled-cycles-frontend | stalled-cycles-backend | cache-misses | cache-references | branch-misses | L1-dcache-misses | L1-icache-misses | dTLB-misses | iTLB-misses | seconds |"
+echo " " 
+
+foreach nev (100000 200000 300000 400000 600000 800000)
+
+setenv GOMP_CPU_AFFINITY "0-31"
+
+set aff="seq"
+
+echo "|${nev} |${aff} |Dyn2Split |"
+taskset -c 0-3,8-11 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -c -d 2 -i 200 -a 2|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+
+echo "|${nev} |${aff} |Dyn1Half |"
+taskset -c 0-7 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -c -d 1 -i 200 |& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+echo "|${nev} |${aff} |Dyn2One |"
+taskset -c 0-15 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -c -d 2 -i 200 -a 2|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+echo "|${nev} |${aff} |Dyn1Half-comp |"
+taskset -c 0-7 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -d 1 -i 200 |& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+
+echo "|${nev} |${aff} |Dyn2One-comp |"
+taskset -c 0-15 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -d 2 -i 200 -a 2|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+
+echo "|${nev} |${aff} |ParOne |"
+taskset -c 0-15 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -p -i 200 -a 2|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+echo "|${nev} |${aff} |ParHalf |"
+taskset -c 0-7 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -p -i 200 |& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+echo "|${nev} |${aff} |ParSplit |"
+taskset -c 0-3,8-11 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -p -i 200 -a 2|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+
+setenv GOMP_CPU_AFFINITY "0-31" 
+
+
+echo "|${nev} |${aff} |Dyn2Full-comp |"
+taskset -c 0-31 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -d 2 -i 200 -a 4|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+echo "|${nev} |${aff} |Dyn2Full |"
+taskset -c 0-31 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -d 2 -c -i 200 -a 4|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+echo "|${nev} |${aff} |Dyn4Full |"
+taskset -c 0-31 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -d 4 -c -i 200 -a 4|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+echo "|${nev} |${aff} |ParFull |"
+taskset -c 0-31 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -p -i 200 -a 4|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+
+setenv GOMP_CPU_AFFINITY "0-7 16-23 8-15 24-31"
+
+set aff="block"
+echo "|${nev} |${aff} |Dyn2Full |"
+taskset -c 0-31 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -d 2 -c -i 200 -a 4|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+
+echo "|${nev} |${aff} |ParFull |"
+taskset -c 0-31 perf stat -e cpu-migrations -e task-clock -e cycles -e instructions -e stalled-cycles-frontend \
+ -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses \
+-e L1-dcache-misses -e L1-icache-load-misses -e dTLB-load-misses -e iTLB-load-misses \
+./main_XEON -n ${nev} -b 512 -p -i 200 -a 4|& \
+grep -A20 -B1 "CPU" | sed 's/#.*//g' | sed '/^ *$/d' | awk '{ if($2!="task-clock"&&$1>1000) {printf(" %10.f|", $1/1000) }else {printf("%10.2f|", $1)} }' | xargs | sed 's/|/|  /g'
+
+setenv GOMP_CPU_AFFINITY "0-31"
+
+end
+
