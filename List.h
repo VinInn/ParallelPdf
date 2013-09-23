@@ -16,7 +16,7 @@ class AbsPdf;
 template<class T> class List : public Named {
  public:
  
- List() : Named("list","list") { ResetIterator(); }
+  List() : Named("list","list",list) { ResetIterator(); }
  explicit List(T &element1) : Named("list","list") { AddElement(element1); ResetIterator(); }
  List(T &element1, T &element2) : Named("list","list") { AddElement(element1); AddElement(element2); ResetIterator(); }
  List(T &element1, T &element2, T &element3) : Named("list","list") {

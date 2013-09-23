@@ -4,7 +4,7 @@
 
 PdfGaussian::PdfGaussian(const Char_t* name, const Char_t* title, Variable &x,
 			 Variable &mu, Variable &sigma) :
-  AbsPdf(name,title), m_x(&x), m_mu(&mu), m_sigma(&sigma)
+  AbsPdf(name,title,&x,&mu,&sigma), m_x(&x), m_mu(&mu), m_sigma(&sigma)
 {
   
 }

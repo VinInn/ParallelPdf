@@ -4,18 +4,24 @@
 #include <cassert>
 
 #include "Named.h"
+#include "PdfReferenceState.h"
+
 #include "TMath.h"
 #include "Data.h"
 #include "omp.h"
 #include <vector>
+#include <initializer_list>
 
 #define RooAbsPdf AbsPdf
 
 class AbsPdf : public Named {
  public:
 
- 
-  AbsPdf(const Char_t* name, const Char_t* title): Named(name,title), m_InvIntegral(omp_get_max_threads()){}
+  template<typename... Args> 
+  AbsPdf(const Char_t* name, const Char_t* title, Args... args):
+    Named(name,title, pdf), m_InvIntegral(omp_get_max_threads()){
+    PdfReferenceState::registerPdf(this,{args...});
+  }
   virtual ~AbsPdf() {}
 
   // FIXME all this needs a clean up

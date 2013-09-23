@@ -30,8 +30,10 @@ public:
   inline void SetAsymError(std::pair<Double_t,Double_t> asymError) { m_errorLo = asymError.first; m_errorHi = asymError.second; }
   inline void setError(Double_t error) { m_error = error; }
   
-  inline Bool_t IsConstant() const { return m_isConstant; }
+  inline bool IsConstant() const { return m_isConstant; }
   inline void setConstant(Bool_t isConstant = kTRUE) { m_isConstant = isConstant; }
+  bool isData() { return m_isData;}
+
   void Print();
   
 protected:
@@ -43,7 +45,13 @@ protected:
   Double_t m_min;
   Double_t m_max;
   
-private:
-  Bool_t m_isConstant;
+  bool m_isConstant;
+  bool m_isData=false;
 };
+
+struct DataVariable : public Variable {
+  template<typename... Args> 
+  DataVariable(Args... args): Variable(args...){ m_isData=true;}
+};
+
 #endif

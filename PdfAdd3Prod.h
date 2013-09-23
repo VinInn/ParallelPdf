@@ -29,7 +29,7 @@ class PdfAdd3Prod final : public AbsPdf {
 public:
 
   PdfAdd3Prod (const Char_t* name, const Char_t* title, List<AbsPdf> pdfs, List<Variable> fractions) :
-    AbsPdf(name,title), 
+    AbsPdf(name,title, &pdfs, &fractions), 
     m_lmodPdf(omp_get_max_threads(),-2),
     m_isExtended(kFALSE)
   {
@@ -201,7 +201,8 @@ private:
     auto invIntegral = GetInvIntegral();
     double const * __restrict__  const *  kres = pres;
     // double const * kres = lres[0];
-    for (auto idx = 0; idx!=bsize; ++idx) {
+#pragma omp simd
+    for (auto idx = 0; idx<bsize; ++idx) {
       // res[idx] = add(kres,coeff,idx,strid)*invIntegral;
       res[idx] = add(kres,coeff,idx)*invIntegral;
     }

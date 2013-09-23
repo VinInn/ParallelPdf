@@ -9,6 +9,7 @@
 #include "RooMinimizer.h"
 #endif
 #include "MsgService.h"
+#include "PdfReferenceState.h"
 
 #include "TRandom.h"
 #include <cmath>
@@ -376,9 +377,9 @@ int main(int argc, char **argv)
   const char* datafile = "data1M.dat";
 
   // Define the variables
-  Variable x("x","",-0.2,0.2); // DE
-  Variable y("y","",5.25,5.29); // mES
-  Variable z("z","",-3,1.5); // Fisher
+  DataVariable x("x","",-0.2,0.2); // DE
+  DataVariable y("y","",5.25,5.29); // mES
+  DataVariable z("z","",-3,1.5); // Fisher
   List<Variable> variables(x,y,z);
 
   Data::nPartions=numa;
@@ -432,12 +433,17 @@ int main(int argc, char **argv)
 	    << std::endl << std::endl;
 
   auto model = Model(x,y,z,N);
-  double valueAlgo(0);
+ 
+  PdfReferenceState::me().init();
+
+  PdfReferenceState::me().print();
+
+
   std::string label;
 
   // Do the calculation with OpenMP
   label = "OpenMP";
-  valueAlgo = DoNLL(Iter,blockSize,data,*model,runMinos,label.c_str(),dynamic,docache,parderiv);
+  DoNLL(Iter,blockSize,data,*model,runMinos,label.c_str(),dynamic,docache,parderiv);
 
   delete model;
 

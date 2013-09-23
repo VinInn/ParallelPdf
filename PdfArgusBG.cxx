@@ -2,7 +2,7 @@
 
 PdfArgusBG::PdfArgusBG(const Char_t* name, const Char_t* title, Variable &m,
 		       Variable &m0, Variable &c) :
-  AbsPdf(name,title), m_m(&m), m_m0(&m0), m_c(&c)
+  AbsPdf(name,title,&m,&m0,&c), m_m(&m), m_m0(&m0), m_c(&c)
 {
 
 }

@@ -11,16 +11,29 @@
 class Named {
  public:
 
-  Named(){}
+  enum rtti { pdf, var, list, unknown};
+
+  Named() {}
   Named(const char* name, const char* title);
+
+  Named(const char* name, const char* title, rtti w) :
+    m_name(name), m_title(title), m_who(w){}
+
   virtual ~Named() { }
+
+  rtti who() const { return m_who;}
 
   inline const char* GetName() const { return m_name.c_str(); }
   inline const char* GetTitle() const { return m_title.c_str(); }
+  inline const char* name() const { return m_name.c_str(); }
+  inline const char* title() const { return m_title.c_str(); }
+
   
  private:
   std::string m_name;
   std::string m_title;
+
+  rtti m_who=unknown;
 
 };
 

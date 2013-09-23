@@ -5,7 +5,8 @@
 
 PdfBifurGaussian::PdfBifurGaussian(const Char_t* name, const Char_t* title, Variable &x,
 				   Variable &mu, Variable &sigmaL, Variable &sigmaR) :
-  AbsPdf(name,title), m_x(&x), m_mu(&mu), m_sigmaL(&sigmaL), m_sigmaR(&sigmaR)
+  AbsPdf(name,title,&x,&mu,&sigmaL,&sigmaR), 
+  m_x(&x), m_mu(&mu), m_sigmaL(&sigmaL), m_sigmaR(&sigmaR)
 {
 
 }

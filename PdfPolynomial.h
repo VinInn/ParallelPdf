@@ -40,11 +40,11 @@ class PdfPolynomial : public AbsPdf {
 public:
   using Poly = HornerPoly<double, N>;  // N is the number of coefficient, not the order, still below one adds one...
   
-  PdfPolynomial(const Char_t* name, const Char_t* title, const Variable &x)  : AbsPdf(name,title), m_x(&x) {}
+  PdfPolynomial(const Char_t* name, const Char_t* title, Variable &x)  : AbsPdf(name,title,&x), m_x(&x) {}
   
-  PdfPolynomial(const Char_t* name, const Char_t* title, const Variable &x,
+  PdfPolynomial(const Char_t* name, const Char_t* title, Variable &x,
 		List<Variable> coeff) :
-    AbsPdf(name,title), m_x(&x)
+    AbsPdf(name,title, &x,&coeff), m_x(&x)
   {
     m_coeff.AddElement(coeff);
     assert(m_coeff.GetSize()==N);
@@ -87,7 +87,8 @@ private:
     
     Poly poly(coeffCPU);
     
-    for (auto idx = 0; idx!=bsize; ++idx) {
+#pragma omp simd
+    for (auto idx = 0; idx<bsize; ++idx) {
       auto x = ldata[idx];
       auto y = poly(x)*invIntegral;
       res[idx] = y;

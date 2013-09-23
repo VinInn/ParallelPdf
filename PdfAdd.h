@@ -30,7 +30,7 @@ template<int N>
 class PdfAdd : public AbsPdf {
 public:
   PdfAdd(const Char_t* name, const Char_t* title, AbsPdf &pdf1, AbsPdf &pdf2, Variable &fraction) :
-    AbsPdf(name,title), m_isExtended(kFALSE)
+    AbsPdf(name,title,&pdf1,&pdf2,&fraction), m_isExtended(kFALSE)
   {
     m_pdfs.AddElement(pdf1);
     m_pdfs.AddElement(pdf2);
@@ -38,7 +38,7 @@ public:
     
   }
   PdfAdd(const Char_t* name, const Char_t* title, List<AbsPdf> pdfs, List<Variable> fractions) :
-    AbsPdf(name,title), m_isExtended(kFALSE)
+    AbsPdf(name,title,&pdfs,&fractions), m_isExtended(kFALSE)
   {
     if (pdfs.GetSize()!=fractions.GetSize() && pdfs.GetSize()!=fractions.GetSize()-1) {
       std::cerr << GetName() << ":: Wrong number of fractions!" << std::endl;
@@ -121,7 +121,8 @@ private:
     Add<double,N> add;
     double const *  kres = lres[0];
     auto invIntegral = GetInvIntegral();
-    for (auto idx = 0; idx!=bsize; ++idx) {
+#pragma omp simd
+    for (auto idx = 0; idx<bsize; ++idx) {
       res[idx] = add(kres,coeff,idx, strid)*invIntegral;
     }
 

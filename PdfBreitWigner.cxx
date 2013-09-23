@@ -5,7 +5,7 @@
 
 PdfBreitWigner::PdfBreitWigner(const Char_t* name, const Char_t* title, Variable &x,
 			       Variable &mu, Variable &width) :
-  AbsPdf(name,title), m_x(&x), m_mu(&mu), m_width(&width)
+  AbsPdf(name,title,&x,&mu,&width), m_x(&x), m_mu(&mu), m_width(&width)
 {
   
 }
