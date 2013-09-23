@@ -54,7 +54,7 @@ class AbsPdf : public Named {
   virtual Bool_t IsExtended() const { return kFALSE; }
   virtual Double_t ExpectedEvents() const { return .0; }
 
-  bool nocache() const { return m_nocache;}
+  bool noCache() const { return m_nocache;}
 
 protected:
 

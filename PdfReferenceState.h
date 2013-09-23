@@ -52,7 +52,7 @@ public:
 
   PdfReferenceState() : m_indexDep(1,0), m_indexPdf(1,0), initialized(false){}
 
-  void init();
+  void init(int size);
 
   static PdfReferenceState & me();
   static void registerPdf(AbsPdf * pdf, std::initializer_list<Named *> pdfOrVar);
@@ -72,6 +72,8 @@ private:
 
 
   std::vector<AbsPdf *> m_pdfs;
+  std::vector<unsigned short> m_indexCache; // some are not in cache....
+
   std::vector<unsigned short> m_indexDep; // index in vector below
   std::vector<short> m_Dep; // direct dependencies
 

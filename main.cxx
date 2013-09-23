@@ -434,7 +434,7 @@ int main(int argc, char **argv)
 
   auto model = Model(x,y,z,N);
  
-  PdfReferenceState::me().init();
+  PdfReferenceState::me().init(data.GetEntries());
 
   PdfReferenceState::me().print();
 

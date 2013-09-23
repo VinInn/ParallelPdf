@@ -117,19 +117,30 @@ namespace {
   }
 }
 
-void PdfReferenceState::init() {
+void PdfReferenceState::init(int size) {
   assert(!initialized);
   initialized=true;
 
+  // invert dependency vectors....
   invert(m_pdfs.size(),m_indexDep, m_Dep);
   invert(m_Params.size(),m_indexPdf,m_PdfsPar);
 
   m_parCache.resize(m_Params.size());
   m_InvIntegrals.resize(m_pdfs.size());
 
+  m_indexCache.resize(m_pdfs.size(),-1);
 
-  // invert dependency vectors....
 
+  auto k=0U; auto i=0U;
+  for ( auto p : m_pdfs) { 
+    if ( p->noCache() ) m_indexCache[i] = k++;
+    ++i;
+  }
+
+  m_resCache = std::move(Data("","",size,k));
+  for (auto i = 0U; i!=m_Params.size(); ++i)
+    m_parCache[i]=m_Params[i]->GetVal();
+ 
 
 }
 
