@@ -25,11 +25,11 @@ struct Add3Prod<T,2> {
 
 // very ad hoc...
 template<int N>
-class PdfAdd3Prod final : public AbsPdf {
+class PdfAdd3Prod final : public NoCacheAbsPdf {
 public:
 
   PdfAdd3Prod (const Char_t* name, const Char_t* title, List<AbsPdf> pdfs, List<Variable> fractions) :
-    AbsPdf(name,title, &pdfs, &fractions), 
+    NoCacheAbsPdf(name,title, &pdfs, &fractions), 
     m_lmodPdf(omp_get_max_threads(),-2),
     m_isExtended(kFALSE)
   {

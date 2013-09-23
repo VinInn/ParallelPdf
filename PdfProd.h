@@ -27,17 +27,17 @@ struct Mult<T,2> {
 #define RooProdPdf PdfProd
 
 template<int N>
-class PdfProd : public AbsPdf {
+class PdfProd : public NoCacheAbsPdf {
 public:
   PdfProd(const Char_t* name, const Char_t* title, AbsPdf &pdf1, AbsPdf &pdf2) :
-    AbsPdf(name,title,&pdf1,&pdf2)
+    NoCacheAbsPdf(name,title,&pdf1,&pdf2)
   {
     m_pdfs.AddElement(pdf1);
     m_pdfs.AddElement(pdf2);
     
   }
   PdfProd(const Char_t* name, const Char_t* title, List<AbsPdf> pdfs):
-    AbsPdf(name,title,&pdfs)
+    NoCacheAbsPdf(name,title,&pdfs)
   {
     m_pdfs.AddElement(pdfs);
   }

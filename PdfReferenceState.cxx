@@ -3,6 +3,14 @@
 #include "Variable.h"
 #include "List"
 
+
+
+void PdfModifiedState::pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+  auto k = findPdf(i);
+  if (k<0) m_reference->pdfVal(i,res,bsize,data,dataOffset);
+  else m_reference->pdf(i)->GetVal(res,bsize,data,dataOffset);
+}
+
 PdfReferenceState & PdfReferenceState::me() {
   static PdfReferenceState local;
   return local;
@@ -29,7 +37,7 @@ int PdfReferenceState::add(List<AbsPdf> & pdfs) {
 
 int PdfReferenceState::add(Variable * lvar) {
   int k = find(m_Params.begin(),m_Params.end(),lvar)-m_Params.begin();
-  if (k==int(m_Params.size())) m_Params.push_back(lvar);
+  if (k==int(m_Params.size())) {  lvar->setNum(m_Params.size()) ;m_Params.push_back(lvar);}
   m_PdfsPar.push_back(k);
   return 1;
 }
@@ -45,7 +53,9 @@ void PdfReferenceState::registerHere(AbsPdf* pdf, std::initializer_list<Named *>
 
   assert(!initialized);
 
+  pdf->setNum(m_pdfs.size());
   m_pdfs.push_back(pdf);
+
 
   auto nP=0; auto nV=0;
   for ( auto elem : pdfOrVar) {
@@ -128,7 +138,7 @@ void PdfReferenceState::print() const {
   std::cout << std::endl;
 
   for (auto k=0U; k!=m_pdfs.size(); ++k) {
-    std::cout << m_pdfs[k]->name() << ": ";
+    std::cout << m_pdfs[k]->num() <<"," <<  m_pdfs[k]->name() << ": ";
       for (auto i=m_indexDep[k]; i!=m_indexDep[k+1]; ++i)
 	std::cout <<  m_pdfs[m_Dep[i]]->name() <<", ";
     std::cout << std::endl;
@@ -136,7 +146,7 @@ void PdfReferenceState::print() const {
   std::cout << std::endl;
 
   for (auto k=0U; k!=m_Params.size(); ++k) {
-    std::cout << m_Params[k]->name() << ": ";
+    std::cout <<  m_Params[k]->num() <<"," << m_Params[k]->name() << ": ";
       for (auto i=m_indexPdf[k]; i!=m_indexPdf[k+1]; ++i)
 	std::cout <<  m_pdfs[m_PdfsPar[i]]->name() <<", ";
     std::cout << std::endl;

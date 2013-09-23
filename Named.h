@@ -22,6 +22,9 @@ class Named {
   virtual ~Named() { }
 
   rtti who() const { return m_who;}
+  void setNum(int i) { m_num=i;}
+  int num() const { return m_num;}
+
 
   inline const char* GetName() const { return m_name.c_str(); }
   inline const char* GetTitle() const { return m_title.c_str(); }
@@ -34,6 +37,7 @@ class Named {
   std::string m_title;
 
   rtti m_who=unknown;
+  int m_num=-1;
 
 };
 

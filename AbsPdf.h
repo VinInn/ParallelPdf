@@ -54,6 +54,11 @@ class AbsPdf : public Named {
   virtual Bool_t IsExtended() const { return kFALSE; }
   virtual Double_t ExpectedEvents() const { return .0; }
 
+  bool nocache() const { return m_nocache;}
+
+protected:
+
+  bool m_nocache=false;
 
 
 private:
@@ -64,6 +69,13 @@ private:
   std::vector<double> m_InvIntegral;
 
 
+};
+
+
+
+struct NoCacheAbsPdf : public AbsPdf {
+  template<typename... Args> 
+   NoCacheAbsPdf(Args... args): AbsPdf(args...){ m_nocache=true;}
 };
 
 #endif
