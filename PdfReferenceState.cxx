@@ -1,8 +1,9 @@
 #include "PdfReferenceState.h"
 #include "AbsPdf.h"
 #include "Variable.h"
-#include "List"
-
+#include "List.h"
+#include <set>
+#include <tuple>
 
 
 void PdfModifiedState::pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
@@ -10,6 +11,48 @@ void PdfModifiedState::pdfVal(size_t i, double * __restrict__ res, unsigned int 
   if (k<0) m_reference->pdfVal(i,res,bsize,data,dataOffset);
   else m_reference->pdf(i)->GetVal(res,bsize,data,dataOffset);
 }
+
+void PdfReferenceState::pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+  auto k = m_indexCache[i];
+  if (k<0) pdf(i)->GetVal(res,bsize,data,dataOffset);
+  else res = m_resCache.GetData(k,dataOffset);
+}
+
+
+void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool force) {
+
+  struct ToRefresh {
+    ToRefresh(){}
+    ToRefresh(int i1, int i2) : ind(i1), deps(i2){}
+    int ind=-1;
+    mutable int deps=0;  // because of set...
+    void incr() const { ++deps;}
+    bool operator<(ToRefresh rh) const { return ind<rh.ind;}
+  };
+  std::set<ToRefresh> toRefresh;
+  auto iter = toRefresh.end();
+  bool ok=false;
+  
+  for (auto i = 0U; i!=m_Params.size(); ++i) {
+    if (force || m_parCache[i]!=m_Params[i]->GetVal()) {
+      m_parCache[i]=m_Params[i]->GetVal();
+      for (auto k=m_indexPdf[i]; k!=m_indexPdf[i+1]; ++k) {
+	auto kp = m_PdfsPar[k];
+	std::tie(iter, ok) = toRefresh.emplace(kp,1); // depends on integral
+	if (ok) for (auto d=m_indexDep[kp]; d!=m_indexDep[kp+1]; ++d) {
+	    std::tie(iter, ok) = toRefresh.emplace(m_Dep[d],2); // +1
+	    if (!ok) (*iter).incr();
+	  }      
+      }
+    }
+  }
+  
+  for ( auto s : toRefresh) { res.push_back(s.ind); dep.push_back(s.deps);}
+
+}
+
+
+
 
 PdfReferenceState & PdfReferenceState::me() {
   static PdfReferenceState local;
@@ -138,10 +181,10 @@ void PdfReferenceState::init(int size) {
   }
 
   m_resCache = std::move(Data("","",size,k));
+
   for (auto i = 0U; i!=m_Params.size(); ++i)
     m_parCache[i]=m_Params[i]->GetVal();
  
-
 }
 
 #include<iostream>

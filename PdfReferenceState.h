@@ -36,6 +36,8 @@ public:
 
 class PdfReferenceState : public PdfState {
 
+  friend class PdfScheduler;
+
 public:
 
   // return value for Paramer i;
@@ -43,9 +45,9 @@ public:
   // return integral for pdf i;
   double invIntegral(size_t i) const final { return m_InvIntegrals[i];}
   // fill res for pdf i;
-  void pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const final {
-    res = m_resCache.GetData(i,dataOffset);
-  }
+  void pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+
+  void refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool force=false);
 
   AbsPdf * pdf(int i) {return m_pdfs[i];}
   AbsPdf const * pdf(int i) const {return m_pdfs[i];}
@@ -79,7 +81,7 @@ private:
 
   std::vector<Variable*> m_Params;
   std::vector<unsigned short> m_indexPdf; // index in the vector below...
-  std::vector<short> m_PdfsPar;  // pdf corresponding to a par... (-1 is a sum  normalization) 
+  std::vector<short> m_PdfsPar;  // pdf corresponding to a par... 
 
   std::vector<double> m_parCache; // cache of param 
   mutable Data m_resCache;   // cache of pdfs results
