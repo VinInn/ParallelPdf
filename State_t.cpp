@@ -1,4 +1,6 @@
+#define private public
 #include "PdfReferenceState.h"
+#undef private
 #include "Data.h"
 #include "List.h"
 
@@ -39,6 +41,16 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
 }
 
 
+void refresh(bool force) {
+  std::vector<unsigned short> res; std::vector<unsigned short>  dep;
+  PdfReferenceState::me().refresh(res,dep,force);
+  assert(res.size()==dep.size());
+  for (auto i=0U; i<res.size(); ++i)
+    std::cout << res[i] <<"," << dep[i] <<" ";
+  std::cout << std::endl;
+}
+
+
 int main() {
 
   const unsigned int N = 10000;
@@ -60,17 +72,20 @@ int main() {
   
   PdfReferenceState::me().print();
 
-
-  std::vector<unsigned short> res; std::vector<unsigned short>  dep;
-  PdfReferenceState::me().refresh(res,dep,true);
-  assert(res.size()==dep.size());
-  for (auto i=0U; i<res.size(); ++i)
-    std::cout << res[i] <<"," << dep[i] <<" ";
-  std::cout << std::endl;
+  refresh(true);
 
   // this is not the way how it will be done as it is not thread safe...
 
-  
+  auto & vars = PdfReferenceState::me().m_Params;
+
+  for (auto i = 0U; i!=vars.size(); ++i) {
+    if (vars[i]->isData() || vars[i]->IsConstant()) continue;
+    auto v = vars[i]->GetVal();
+    auto e = vars[i]->GetError();
+    vars[i]->SetVal(v+e);
+    std::cout << "var " << i << ":   ";
+    refresh(false);
+  }
 
 
   delete model; // sic
