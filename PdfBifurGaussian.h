@@ -15,23 +15,23 @@ class PdfBifurGaussian : public AbsPdf {
 
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(*m_mu); 
     parameters.AddElement(*m_sigmaL); parameters.AddElement(*m_sigmaR); }
+
+  virtual double integral(PdfState const & state) const;
   
-private:
-
-  virtual Double_t integral() const;
-
-  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    virtual void values(PdfState const & state, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
     
     Data::Value_t const * __restrict__ ldata = data.GetData(*m_x, dataOffset);
     
-    auto invIntegral = GetInvIntegral();
- 
-    auto coeffL = -0.5/(m_sigmaL->GetVal()*m_sigmaL->GetVal());
-    auto coeffR = -0.5/(m_sigmaR->GetVal()*m_sigmaR->GetVal());
-    auto mu = m_mu->GetVal();
+
+    auto invInt = invIntegral(state);
+
+    auto coeffL = -0.5/(m_sigmaL->value(state)*m_sigmaL->value(state));
+    auto coeffR = -0.5/(m_sigmaR->value(state)*m_sigmaR->value(state));
+    auto mu = m_mu->value(state);
     for (auto idx = 0U; idx!=bsize; ++idx) {
       auto x = ldata[idx];
-      auto y = evaluateOne(x,mu,coeffL,coeffR)*invIntegral;
+      auto y = evaluateOne(x,mu,coeffL,coeffR)*invInt;
       res[idx] = y;
     }
 

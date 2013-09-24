@@ -1,4 +1,3 @@
-
 #ifndef NAMED
 #define NAMED
 

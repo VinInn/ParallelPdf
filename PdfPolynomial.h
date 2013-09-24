@@ -54,9 +54,10 @@ public:
   
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(m_coeff); }
   
-private:
+
+
   
-  virtual Double_t integral() const
+  virtual double integral(PdfState const & state) const
   {
     UInt_t order = m_coeff.GetSize();
     Double_t xmaxprod = m_x->GetMax();
@@ -65,7 +66,7 @@ private:
     for (UInt_t i = 0; i < order; i++) {
       xmaxprod *= m_x->GetMax();
       xminprod *= m_x->GetMin();
-      sum += m_coeff.GetElement(i)->GetVal()*(xmaxprod - xminprod)/(i+2);
+      sum += m_coeff.GetElement(i)->value(state)*(xmaxprod - xminprod)/(i+2);
     }
     return sum;
     
@@ -73,16 +74,16 @@ private:
   
   
   
-  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+  void values(PdfState const & state, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
     res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
 
     Data::Value_t const * __restrict__ ldata = data.GetData(*m_x, dataOffset);
     
-    auto invIntegral = GetInvIntegral();
+    auto invInt = invIntegral(state);
     
     Int_t size = m_coeff.GetSize();
     Double_t coeffCPU[size+1];
-    loadCoeff(coeffCPU,size);
+    loadCoeff(state,coeffCPU,size);
     assert(m_coeff.GetSize()==N);
     
     Poly poly(coeffCPU);
@@ -90,7 +91,7 @@ private:
 #pragma omp simd
     for (auto idx = 0; idx<bsize; ++idx) {
       auto x = ldata[idx];
-      auto y = poly(x)*invIntegral;
+      auto y = poly(x)*invInt;
       res[idx] = y;
     }
 
@@ -99,15 +100,12 @@ private:
 
  private:
 
-  inline const Double_t *loadCoeff(Double_t *coeffCPU, UInt_t size) const {
+  void loadCoeff(PdfState const & state, Double_t *coeffCPU, UInt_t size) const {
     // the coeffCPU must have the correct dimension (size+1)
     coeffCPU[0] = 1.;
     for(UInt_t i = 0; i<size; i++) {
-      coeffCPU[i+1] = m_coeff.GetElement(i)->GetVal();
+      coeffCPU[i+1] = m_coeff.GetElement(i)->value(state);
     }
-    
-    return &coeffCPU[0];
-
   }
 
  

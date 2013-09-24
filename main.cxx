@@ -65,28 +65,24 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
   double start = Timer::Wtime();
 
   if (Iter>0) {
-#ifndef  DO_MINUIT
-    // done in minimizer
-    nll.makeCache();
-#endif
-    List<Variable> pdfPars;
-    nll.GetPdf()->GetParameters(pdfPars);
+
+    auto pdfPars = PdfReferenceState::me().variables();
     auto v1 = nll.GetVal(false); // init cache if needed
     auto v2 = nll.GetVal();
 
     // first count 
     int nvar=0;
-    for ( auto ip=0U; ip!=pdfPars().size(); ++ip) if (!pdfPars()[ip]->IsConstant()) ++nvar;
+    for ( auto p :  pdfPars ) if (!pdfPars[ip]->IsConstant() || !pdfPars[ip]->isData()) ++nvar;
     
     int var[nvar];
     int k=0;
-    for ( auto ip=0U; ip!=pdfPars().size(); ++ip) if (!pdfPars()[ip]->IsConstant()) var[k++]= ip;
+    for ( auto p :  pdfPars ) if (!pdfPars[ip]->IsConstant() || !pdfPars[ip]->isData()) var[k++]= ip;
     assert(k==nvar);
    
 
     if (!parderiv) {
       {
-	auto vr = pdfPars()[var[0]];
+	auto vr = pdfPars[var[0]];
 	auto v = vr->GetVal();
 	auto e = vr->GetError();
 	vr->SetAllVal(v-e);
@@ -106,7 +102,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 		  << std::endl;
       }
       {
-	auto vr = pdfPars()[var[nvar-1]];
+	auto vr = pdfPars[var[nvar-1]];
 	auto v = vr->GetVal();
 	auto e = vr->GetError();
 	vr->SetAllVal(v-e);
@@ -134,7 +130,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 		<< v3 << " "  
 		<< v4 << " "
 		<< std::endl;
-      auto vr = pdfPars()[var[0]];
+      auto vr = pdfPars[var[0]];
       auto v = vr->GetVal();
       auto e = vr->GetError();
       vr->SetAllVal(v+e);
@@ -151,7 +147,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 		<< v3 << " "  
 		<< v4 << " "
 		<< std::endl;
-      vr = pdfPars()[var[nvar-1]];
+      vr = pdfPars[var[nvar-1]];
       v = vr->GetVal();
       e = vr->GetError();
       vr->SetAllVal(v+e);
@@ -171,7 +167,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 		<< v5 << "\n"
 		<< std::endl;
       
-      vr = pdfPars()[var[nvar-1]];
+      vr = pdfPars[var[nvar-1]];
       v = vr->GetVal();
       e = vr->GetError();
       vr->SetVal(v+e);
@@ -179,8 +175,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
       vr->SetVal(v-e);
       v4 = nll.GetVal(var[nvar-1]);
       vr->SetVal(v);
-      nll.GetPdf()->CacheIntegral(var[nvar-1]); // does not really matter as pdf cache is used...
-      vr = pdfPars()[var[0]];
+      vr = pdfPars[var[0]];
       v = vr->GetVal();
       e = vr->GetError();
       vr->SetVal(v+e);
@@ -188,8 +183,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
       vr->SetVal(v-e);
       v2 = nll.GetVal(var[0]);
       vr->SetVal(v);
-      nll.GetPdf()->CacheIntegral(var[0]);
- 
+  
       v5 = nll.GetVal();
       std::cout << "init test " 
 		<< v1 << " " 
@@ -231,7 +225,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 	    if (il>=nloops) break;
 	    auto ik = il/2; // hope optmize in >1
 	    bool pm = 0 == il%2;  // hope optmize in &1
-	    auto vr = pdfPars()[var[ik]];
+	    auto vr = pdfPars[var[ik]];
 	    auto v = vr->GetVal();
 	    auto e = vr->GetError();
 	    auto nv = pm ? v+e : v-e;
@@ -242,8 +236,6 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 	      lval[omp_get_thread_num()] -= nll.GetVal(var[ik]);
 
 	    vr->SetVal(v);
-	    // now the integral is wrong fir this thread...  (does not matter!)
-	    nll.GetPdf()->CacheIntegral(var[ik]);
 	    ok[ik]++;
 	  }
 	} // end parallel section
@@ -299,9 +291,8 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 
   if (Iter>0) std::cout << "NUmber of Iterations " << Iter << "\nNUmber of Evaluation " << nEval << std::endl;
 
-  List<Variable> pdfPars;
-  
-  nll.GetPdf()->GetParameters(pdfPars);
+  List<Variable> pdfPars; 
+  pdfPars() = PdfReferenceState::me().variables();
   pdfPars.Sort();
   pdfPars.Print(kTRUE);
   std::cout << std::endl;
@@ -435,8 +426,6 @@ int main(int argc, char **argv)
   auto model = Model(x,y,z,N);
  
   PdfReferenceState::me().init(data.GetEntries());
-
-  PdfReferenceState::me().print();
 
 
   std::string label;

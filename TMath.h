@@ -72,7 +72,7 @@ namespace TMath {
   inline Double_t ATan(Double_t x) { return vdt::fast_atan(x); }
   inline Double_t ATan2(Double_t y, Double_t x) { return vdt::fast_atan2(y, x);  }
 #endif
-  inline Double_t Sqrt(Double_t x) { return std::sqrt(x); }
+  constexpr Double_t Sqrt(Double_t x) { return std::sqrt(x); }
   inline Double_t Abs(Double_t x) { return std::abs(x); }
   inline Double_t Power(Double_t x, Double_t y) { return std::pow(x,y); }
   inline Double_t Erf(Double_t x) { return erf(x); }

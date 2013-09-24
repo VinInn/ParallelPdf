@@ -1,5 +1,6 @@
 #ifndef ABS_PDF
 #define ABS_PDF
+
 #include <iostream>
 #include <cassert>
 
@@ -8,8 +9,6 @@
 
 #include "TMath.h"
 #include "Data.h"
-#include "omp.h"
-#include <vector>
 #include <initializer_list>
 
 #define RooAbsPdf AbsPdf
@@ -19,36 +18,24 @@ class AbsPdf : public Named {
 
   template<typename... Args> 
   AbsPdf(const Char_t* name, const Char_t* title, Args... args):
-    Named(name,title, pdf), m_InvIntegral(omp_get_max_threads()){
+    Named(name,title, pdf){
     PdfReferenceState::registerPdf(this,{args...});
   }
   virtual ~AbsPdf() {}
-
-  // FIXME all this needs a clean up
-  virtual void makeCache(unsigned int){}
-  virtual int verifyCache(bool){ return 0;}
-  virtual unsigned int cacheSize() const { return 0;}
 
 
   virtual void RandomizeFloatParameters();
   virtual void GetParameters(List<Variable>& parameters) { }
 
-
-  virtual void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const=0; 
-  
-  // to be called outside parallel loop 
-  virtual void CacheAllIntegral() {
-    auto li = 1./integral();
-    for (auto & iI :  m_InvIntegral) iI = li;
+  void operator()(PdfState const & state, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+    state.pdfVal(num(),res, loc, bsize,data,dataOffset);
   }
+  double invIntegral(PdfState const & state) const { return state.invIntegral(num()); }
 
-  // to be called inside parallel loop 
-  virtual void CacheIntegral(int lpar=-2) {
-    m_InvIntegral[omp_get_thread_num()] = 1./integral();
-  }
+  virtual double integral(PdfState const & state) const = 0;
+  virtual void values(PdfState const & state, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const=0; 
 
-  
-  Double_t GetInvIntegral() const { return  m_InvIntegral[omp_get_thread_num()];}
+
 
   virtual Double_t ExtendedTerm(UInt_t observed) const { return .0; }
   virtual Bool_t IsExtended() const { return kFALSE; }
@@ -62,12 +49,6 @@ protected:
 
 
 private:
-
-  virtual Double_t integral() const = 0;
-
- 
-  std::vector<double> m_InvIntegral;
-
 
 };
 

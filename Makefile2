@@ -113,7 +113,7 @@ OBJLIST := $(patsubst %.cxx,$(DIR)/%.o,$(CXXLIST))
 
 all: $(MAIN)_$(DIR)
 
-tests: tests/Data_t
+tests: tests/Data_t tests/State_t
 
 
 $(DIR)/%.o: %.cxx %.h

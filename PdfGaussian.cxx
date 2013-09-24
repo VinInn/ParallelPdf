@@ -9,14 +9,14 @@ PdfGaussian::PdfGaussian(const Char_t* name, const Char_t* title, Variable &x,
   
 }
 
-Double_t PdfGaussian::integral() const
+double PdfGaussian::integral(PdfState const & state) const
 {
   const Double_t root2 = TMath::Sqrt2() ;
   const Double_t rootPiBy2 = TMath::Sqrt(TMath::PiOver2());
-  Double_t invxscale = 1./(root2*m_sigma->GetVal());
-  Double_t ret = rootPiBy2*m_sigma->GetVal()*
-    (TMath::Erf((m_x->GetMax()-m_mu->GetVal())*invxscale)-
-     TMath::Erf((m_x->GetMin()-m_mu->GetVal())*invxscale));
+  Double_t invxscale = 1./(root2*m_sigma->value(state));
+  Double_t ret = rootPiBy2*m_sigma->value(state)*
+    (TMath::Erf((m_x->GetMax()-m_mu->value(state))*invxscale)-
+     TMath::Erf((m_x->GetMin()-m_mu->value(state))*invxscale));
 
   return ret;
   

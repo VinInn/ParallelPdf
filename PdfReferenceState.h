@@ -1,38 +1,17 @@
 #ifndef PdfReferenceState_H
 #define PdfReferenceState_H
 
+#include "PdfState.h"
+
 #include "Named.h"
 #include <vector>
 #include <initializer_list>
-#include "Data.h"
 
 
-class AbsPdf;
-class Variable;
 #include "List.h"
 
 
-
-/*
- * state of the pdf: it could be either reference or modified
- * a reference state has all chaches initialized
- * a modified state 
- *
- */
-class PdfState {
-public:
-  virtual ~PdfState(){}
-
-  // return value for Paramer i;
-  virtual double value(size_t i) const =0;
-  // return integral for pdf i;
-  virtual double invIntegral(size_t i) const =0;
-  // fill res for pdf i;
-  virtual void pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const =0;
-
-
-};
-
+#include "Data.h"
 
 class PdfReferenceState : public PdfState {
 
@@ -40,14 +19,22 @@ class PdfReferenceState : public PdfState {
 
 public:
 
+  std::vector<Variable*> & variables() { return m_Params; }
+  std::vector<Variable*> const & variables() const { return m_Params; }
+
   // return value for Paramer i;
-  double value(size_t i) const final { return m_parCache[i];}
+  double paramVal(size_t i) const final { return m_parCache[i];}
   // return integral for pdf i;
   double invIntegral(size_t i) const final { return m_InvIntegrals[i];}
   // fill res for pdf i;
-  void pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  void pdfVal(size_t i, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
 
-  void refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool force=false);
+  void cacheIntegral(size_t i) const final;
+  void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+
+
+
+  void refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar=-1, bool force=false);
 
   AbsPdf * pdf(int i) {return m_pdfs[i];}
   AbsPdf const * pdf(int i) const {return m_pdfs[i];}
@@ -85,7 +72,7 @@ private:
 
   std::vector<double> m_parCache; // cache of param 
   mutable Data m_resCache;   // cache of pdfs results
-  std::vector<double> m_InvIntegrals; // cache of inverseIntegrals
+  mutable std::vector<double> m_InvIntegrals; // cache of inverseIntegrals
 
   bool initialized;
 
@@ -96,12 +83,19 @@ class PdfModifiedState  : public PdfState {
 
 public:
 
+  PdfModifiedState(PdfReferenceState const * ref, unsigned int ipar, double v, std::vector<unsigned short> const & ipdfs) :
+    m_reference(ref),  m_param(ipar), m_pdfs(ipdfs), m_value(v){}
+
+
   // return value for Paramer i;
-  double value(size_t i) const final { return i== m_param ?  m_value : m_reference->value(i);}
+  double paramVal(size_t i) const final { return i== m_param ?  m_value : m_reference->paramVal(i);}
   // return integral for pdf i;
   double invIntegral(size_t i) const final { auto k = findPdf(i); return k>=0 ? m_InvIntegrals[k] : m_reference->invIntegral(i); }
   // fill res for pdf i;
-  void pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  void pdfVal(size_t i, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+
+  void cacheIntegral(size_t i) const final;
+  void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
 
 
 private:
@@ -119,7 +113,7 @@ private:
 
   double m_value;
 
-  std::vector<double> m_InvIntegrals;
+  mutable std::vector<double> m_InvIntegrals;
 
 };
 

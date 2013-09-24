@@ -1,5 +1,7 @@
 #include "Data.h"
 #include "Partitioner.h"
+#include "Variable.h"
+
 
 #ifdef NUMACTL
 #include <numa.h>

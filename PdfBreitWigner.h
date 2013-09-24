@@ -14,17 +14,18 @@ public:
   
  private:
 
-  virtual Double_t integral() const;
-
-  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
-    
+  virtual double integral(PdfState const & state) const;
+  
+  virtual void values(PdfState const & state, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
+   
     Data::Value_t const * __restrict__ ldata = data.GetData(*m_x, dataOffset);
     
-    auto invIntegral = GetInvIntegral();
-    auto mu = m_mu->GetVal(); auto wd = m_width->GetVal();
+    auto invInt = invIntegral(state);
+    auto mu = m_mu->value(state); auto wd = m_width->value(state);
     for (auto idx = 0U; idx!=bsize; ++idx) {
       auto x = ldata[idx];
-      auto y = evaluateOne(x,mu,wd)*invIntegral;
+      auto y = evaluateOne(x,mu,wd)*invInt;
       res[idx] = y;
     }
 

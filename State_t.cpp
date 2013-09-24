@@ -41,9 +41,9 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
 }
 
 
-void refresh(bool force) {
+void refresh(int ivar , bool force) {
   std::vector<unsigned short> res; std::vector<unsigned short>  dep;
-  PdfReferenceState::me().refresh(res,dep,force);
+  PdfReferenceState::me().refresh(res,dep,ivar,force);
   assert(res.size()==dep.size());
   for (auto i=0U; i<res.size(); ++i)
     std::cout << res[i] <<"," << dep[i] <<" ";
@@ -72,7 +72,7 @@ int main() {
   
   PdfReferenceState::me().print();
 
-  refresh(true);
+  refresh(-1,true);
 
   // this is not the way how it will be done as it is not thread safe...
 
@@ -84,8 +84,18 @@ int main() {
     auto e = vars[i]->GetError();
     vars[i]->SetVal(v+e);
     std::cout << "var " << i << ":   ";
-    refresh(false);
+    refresh(-1,false);
   }
+  std::cout << std::endl;
+  std::cout << std::endl;
+
+  for (auto i = 0U; i!=vars.size(); ++i) {
+    if (vars[i]->isData() || vars[i]->IsConstant()) continue;
+    std::cout << "var " << i << ":   ";
+    refresh(i,true);
+  }
+  std::cout << std::endl;
+  std::cout << std::endl;
 
 
   delete model; // sic

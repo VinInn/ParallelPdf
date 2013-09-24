@@ -1,8 +1,14 @@
 #ifndef VARIABLE_H
 #define VARIABLE_H
 
+
+#include "PdfState.h"
+
+
 #include "Named.h"
 #include "TMath.h"
+
+
 #include <omp.h>
 #include <vector>
 
@@ -17,6 +23,10 @@ public:
 
   inline Double_t GetVal() const { return m_value[omp_get_thread_num()]; }
   
+  double value(PdfState const & state) const {
+    return state.paramVal(num());
+  }
+
   inline Double_t GetError() const { return m_error; }
   inline Double_t GetMin() const { return m_min; }
   inline Double_t GetMax() const { return m_max; }

@@ -16,19 +16,22 @@ public:
   virtual void GetParameters(List<Variable>& parameters) { parameters.AddElement(*m_m0); parameters.AddElement(*m_c); }
 
 private:
-  virtual Double_t integral() const;
 
-  void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+  virtual double integral(PdfState const & state) const;
+  
+  
+  virtual void values(PdfState const & state, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
     
     Data::Value_t const * __restrict__ ldata = data.GetData(*m_m, dataOffset);
     
-    auto invIntegral = GetInvIntegral();
+    auto invInt = invIntegral(state);
  
-    auto om0 = 1./m_m0->GetVal();
-    auto c = m_c->GetVal();
+    auto om0 = 1./m_m0->value(state);
+    auto c = m_c->value(state);
     for (auto idx = 0U; idx!=bsize; ++idx) {
       auto x = ldata[idx];
-      auto y = evaluateOne(x,om0,c)*invIntegral;
+      auto y = evaluateOne(x,om0,c)*invInt;
       res[idx] = y;
     }
 

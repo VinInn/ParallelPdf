@@ -7,7 +7,7 @@
 
 template<typename T, int N>
 struct Mult {
-
+  T operator()(T const *  __restrict__ const * v,  int i ) const { return (*v)[i] * mult(v+1,i); }
   T operator()(T const * v,  int i,  int stride ) const { return (v)[i] * mult(v+stride,i,stride); }
   T operator()(std::initializer_list<T> il) const { return *il.begin() * mult(std::begin(il)+1);}
   Mult<T,N-1> mult;
@@ -18,6 +18,7 @@ template<typename T>
 struct Mult<T,2> {
   
   T operator()(T x, T y) const { return x*y;}
+  T operator()(T const *  __restrict__ const * v,  int i ) const { return (*v)[i] * (*(v+1))[i]; }
   T operator()(T const * v, int i,  int stride ) const { return (v)[i] * (v+stride)[i]; }
   T operator()(std::initializer_list<T> il) const { return *il.begin() * *(std::begin(il)+1);}
 };
@@ -69,27 +70,27 @@ public:
   
 private:  
 
-  virtual Double_t integral() const { return 1.; }
+  virtual double integral(PdfState const & state) const { return  1.; }
   
-  virtual void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
-
+  
+  virtual void values(PdfState const & state, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+    res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
+    
     auto strid = stride(bsize);
+    double * __restrict__ pres[N];
     alignas(ALIGNMENT) double lres[N][strid];
 
-    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
-    
-    int k=0;
-    AbsPdf *pdf(0);
-    while ((pdf = iter_pdfs.Next())!=0) {
-      pdf->GetVal(lres[k++], bsize, data, dataOffset);
+    for (int l=0; l!=N; ++l) {
+      auto pdf = m_pdfs()[l];
+      (*pdf)(state,pres[l], &(lres[l][0], bsize, data, dataOffset);
     }
-    assert(k==N);
-    
+
     
     Mult<double,N> mult;
-    double const *  kres = lres[0];
+    double const * __restrict__  const *  kres = pres;
+#pragma omp simd
     for (auto idx = 0; idx!=bsize; ++idx) {
-      res[idx] = mult(kres,idx, strid);
+      res[idx] = mult(kres,idx);
     }
   }
   

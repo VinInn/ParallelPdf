@@ -44,8 +44,9 @@ NLL::~NLL() {
 
 
 
-double  NLL::GetVal(int lpar) {
+double  NLL::GetVal(PdfState& state, std::vector<unsigned short> const & pdfs) {
   // assume to be in a thread..
+
 
   auto ntot = m_data->GetEntries();
   auto par = 0U;
@@ -59,21 +60,22 @@ double  NLL::GetVal(int lpar) {
     size   =  m_data->sizeP();
   }
 
-  m_pdf->CacheIntegral(lpar);
+  for (auto i: pdfs) state.cacheIntegral(i);
 
 
   alignas(ALIGNMENT) double res[m_nBlockEvents];
+  double * lres=0;
   TMath::IntLog localValue;
   for (auto ie=start; ie<start+size; ie+= m_nBlockEvents) {
     auto offset = ie;
     auto bsize = std::min(m_nBlockEvents,(start+size)-ie);
-    m_pdf->GetVal(res, bsize, *m_data, offset);  
+    m_pdf->values(state,res, lres, bsize, *m_data, offset);  
     PartialNegReduction(localValue,res,bsize);
   }
   auto ret = -0.693147182464599609375*localValue.value();
 
   if (par==0 && m_pdf->IsExtended())
-    ret += m_pdf->ExtendedTerm(ntot);
+    ret += m_pdf->ExtendedTerm(state,ntot);
 
   return ret;
 }
@@ -82,7 +84,9 @@ double  NLL::GetVal(int lpar) {
 Double_t NLL::GetVal(bool verify)
 {
 
-  if (docache) m_pdf->verifyCache(!verify);
+  std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
+  PdfReferenceState::me().refresh(res,dep,-1,!doCache);
+
 
   static bool first=true;
   if (first) {
@@ -91,7 +95,8 @@ Double_t NLL::GetVal(bool verify)
   }
   m_nLoops++;
 
-  m_pdf->CacheAllIntegral();
+  for (auto i: pdfs) state.cacheIntegral(i);
+
   
   m_logs.clear();
   m_logs.resize(OpenMP::GetMaxNumThreads());

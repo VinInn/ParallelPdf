@@ -1,6 +1,6 @@
 #include "AbsPdf.h"
 #include "TRandom.h"
-
+#include "Variable.h"
 
 void AbsPdf::RandomizeFloatParameters()
 {

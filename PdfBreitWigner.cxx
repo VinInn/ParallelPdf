@@ -11,10 +11,10 @@ PdfBreitWigner::PdfBreitWigner(const Char_t* name, const Char_t* title, Variable
 }
 
 
-Double_t PdfBreitWigner::integral() const
+double PdfBreitWigner::integral(PdfState const & state) const
 {
-  Double_t c = 2./m_width->GetVal();
-  Double_t ret = c*(TMath::ATan(c*(m_x->GetMax()-m_mu->GetVal())) - TMath::ATan(c*(m_x->GetMin()-m_mu->GetVal())));
+  Double_t c = 2./m_width->value(state);
+  Double_t ret = c*(TMath::ATan(c*(m_x->GetMax()-m_mu->value(state))) - TMath::ATan(c*(m_x->GetMin()-m_mu->value(state))));
   
   return ret;
   

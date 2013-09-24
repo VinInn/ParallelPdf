@@ -6,7 +6,9 @@
 
 #include "openmp.h"
 
-#include "Variable.h"
+
+class Variable;
+
 #include "List.h"
 
 #include <vector>

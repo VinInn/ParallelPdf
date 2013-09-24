@@ -23,13 +23,11 @@ class NLL : public Named {
   Double_t GetVal(bool verify=true);
 
   // assume only lpar changed (as in derivatives); sequential
-  double GetVal(int lpar);
+  double GetVal(PdfState& state, std::vector<unsigned short> const & pdfs);
 
 
   inline AbsPdf *GetPdf() { return m_pdf; }
-  void makeCache() { 
-    if (docache) m_pdf->makeCache(dataSize());
-  }
+  void makeCache();
 
 
   inline void SetBlockEventsSize(UInt_t nBlockEvents) {

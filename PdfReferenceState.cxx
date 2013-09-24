@@ -6,20 +6,44 @@
 #include <tuple>
 
 
-void PdfModifiedState::pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+void PdfModifiedState::pdfVal(size_t i, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
   auto k = findPdf(i);
-  if (k<0) m_reference->pdfVal(i,res,bsize,data,dataOffset);
-  else m_reference->pdf(i)->GetVal(res,bsize,data,dataOffset);
+  if (k<0) m_reference->pdfVal(i,res,loc,bsize,data,dataOffset);
+  else { res=loc; m_reference->pdf(i)->values(*this,res,bsize,data,dataOffset);}
 }
 
-void PdfReferenceState::pdfVal(size_t i, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+void PdfReferenceState::pdfVal(size_t i, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
   auto k = m_indexCache[i];
-  if (k<0) pdf(i)->GetVal(res,bsize,data,dataOffset);
+  if (k<0) { res=loc; pdf(i)->values(*this,res,bsize,data,dataOffset); }
   else res = m_resCache.GetData(k,dataOffset);
 }
 
+void PdfModifiedState::cacheIntegral(size_t i) const {
+  auto k = findPdf(i);
+  if (k<0) m_reference->cacheIntegral(i);
+  else m_InvIntegrals[k] = m_reference->pdf(i)->integral(*this);
+}
 
-void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool force) {
+void PdfReferenceState::cacheIntegral(size_t i) const {
+  m_InvIntegrals[i] = pdf(i)->integral(*this);
+}
+
+void PdfModifiedState::cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+  auto k = findPdf(i);
+  if (k<0) m_reference->cachePdf(i,bsize,data,dataOffset);
+}
+
+void PdfReferenceState::cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+  auto k = m_indexCache[i];
+  if (k<0) return;
+  auto res = m_resCache.GetData(k,dataOffset);
+  pdf(i)->values(*this,res,bsize,data,dataOffset);
+}
+
+
+
+
+void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool force) {
 
   struct ToRefresh {
     ToRefresh(){}
@@ -33,18 +57,32 @@ void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<u
   auto iter = toRefresh.end();
   bool ok=false;
   
-  for (auto i = 0U; i!=m_Params.size(); ++i) {
+  std::function<void(unsigned int)> walk;
+  walk = [&](unsigned int kp) {
+    for (auto d=m_indexDep[kp]; d!=m_indexDep[kp+1]; ++d) {
+      auto kk = m_Dep[d];
+      std::tie(iter, ok) = toRefresh.emplace(kk,2); // +1
+      if (ok) walk(kk);
+      else (*iter).incr();
+    }
+  };
+
+  auto refreshI = [&](unsigned int i) {
+    if (m_Params[i]->isData()) return;
     if (force || m_parCache[i]!=m_Params[i]->GetVal()) {
-      m_parCache[i]=m_Params[i]->GetVal();
+      if (ivar<0) m_parCache[i]=m_Params[i]->GetVal();
       for (auto k=m_indexPdf[i]; k!=m_indexPdf[i+1]; ++k) {
 	auto kp = m_PdfsPar[k];
 	std::tie(iter, ok) = toRefresh.emplace(kp,1); // depends on integral
-	if (ok) for (auto d=m_indexDep[kp]; d!=m_indexDep[kp+1]; ++d) {
-	    std::tie(iter, ok) = toRefresh.emplace(m_Dep[d],2); // +1
-	    if (!ok) (*iter).incr();
-	  }      
+	if (ok) walk(kp);
       }
     }
+  };
+
+  if (ivar>=0) refreshI(ivar);
+  else
+  for (auto i = 0U; i!=m_Params.size(); ++i) {
+    refreshI(i);
   }
   
   for ( auto s : toRefresh) { res.push_back(s.ind); dep.push_back(s.deps);}

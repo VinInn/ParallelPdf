@@ -10,7 +10,7 @@
 
 template<typename T, int N>
 struct Add {
-
+  T operator()(T const *  __restrict__ const * v, T const * __restrict__ c, int i ) const { return (*c)*(*v)[i] + add(v+1,c+1,i); }
   T operator()(T const * v, T const * c, int i, int stride ) const { return (*c)*v[i] + add(v+stride,c+1,i,stride); }
   T operator()(std::initializer_list<T> il) const { return *il.begin()+add(std::begin(il)+1);}
   Add<T,N-1> add;
@@ -21,6 +21,7 @@ template<typename T>
 struct Add<T,2> {
   
   T operator()(T x, T y) const { return x+y;}
+  T operator()(T const *  __restrict__ const * v, T const * __restrict__ c, int i ) const { return (*c)*(*v)[i] + (*(c+1))*(*(v+1))[i]; }
   T operator()(T const * v, T const * c, int i, int stride ) const { return (*c)*v[i] + (*(c+1))*(v+stride)[i]; }
   T operator()(std::initializer_list<T> il) const { return *il.begin() + *(std::begin(il)+1);}
 };
@@ -66,88 +67,75 @@ public:
     }
   }
   
-  void CacheIntegral(int lpar=-2) final {
-    AbsPdf::CacheIntegral();
-    for (auto pdf : m_pdfs()) pdf->CacheIntegral(lpar);
-  }
  
-
-  void CacheAllIntegral() final {
-    AbsPdf::CacheAllIntegral();
-    for (auto pdf : m_pdfs()) pdf->CacheAllIntegral();
-  }     
-
   
-
+  virtual double integral(PdfState const & state) const { return m_isExtended ? ExpectedEvents(state) : 1.; }
   
-private:
-
-
-
-  virtual Double_t integral() const { return m_isExtended ? ExpectedEvents() : 1.; }
   
-
-  virtual void GetVal(double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
+  virtual void values(PdfState const & state, double * __restrict__ res, unsigned int bsize, const Data & data, unsigned int dataOffset) const { 
     res = (double * __restrict__)__builtin_assume_aligned(res,ALIGNMENT);
 
     auto strid = stride(bsize);
+    double * __restrict__ pres[N];
     alignas(ALIGNMENT) double lres[N][strid];
     double coeff[N];
 
-    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
     List<Variable>::Iterator iter_fractions(m_fractions.GetIterator());
     
     Variable *var(0);
-    AbsPdf *pdf = iter_pdfs.Next();
     Double_t lastFraction = 1.;
  
-   
     int k=0;
     while ((var = iter_fractions.Next())!=0) {
-      lastFraction -= var->GetVal();
-      coeff[k]=  var->GetVal();
-      pdf->GetVal(lres[k], bsize, data, dataOffset);
-      pdf = iter_pdfs.Next();
-      ++k;
+      lastFraction -= var->value(state);
+      coeff[k++]=  var->value(state);
     }
 
     if (!m_isExtended) {
       coeff[k]=lastFraction;
-      pdf->GetVal(lres[k], bsize, data, dataOffset);
-       assert(N==k+1);
+      assert(N==k+1);
     } else 
       assert(N==k);
+ 
+    for (int l=0; l!=N; ++l) {
+      auto pdf = m_pdfs()[l];
+      (*pdf)(state,pres[l], &(lres[l][0], bsize, data, dataOffset);
+    }
+  
     
     Add<double,N> add;
-    double const *  kres = lres[0];
-    auto invIntegral = GetInvIntegral();
+   auto invInt = invIntegral(state);
+    double const * __restrict__  const *  kres = pres;
+    // double const * kres = lres[0];
 #pragma omp simd
     for (auto idx = 0; idx<bsize; ++idx) {
-      res[idx] = add(kres,coeff,idx, strid)*invIntegral;
+      // res[idx] = add(kres,coeff,idx,strid)*invIntegral;
+      res[idx] = add(kres,coeff,idx)*invInt;
     }
 
   }
 
-  virtual Double_t ExtendedTerm(UInt_t observed) const {
-    Double_t expected = ExpectedEvents();
+
+  virtual Double_t ExtendedTerm(PdfState const & state, UInt_t observed) const {
+    Double_t expected = ExpectedEvents(state);
     return expected-observed*TMath::Log(expected);
   }
 
   virtual Bool_t IsExtended() const { return m_isExtended; }
 
-  virtual Double_t ExpectedEvents() const {
+  virtual Double_t ExpectedEvents(PdfState const & state) const {
     Double_t nEvents(0);
     if (m_isExtended) {
       Variable *var(0);
       List<Variable>::Iterator iter_fractions(m_fractions.GetIterator());
       while ((var = iter_fractions.Next())!=0)
-	nEvents += var->GetVal();
+	nEvents += var->value(state);
     }
     
   return nEvents;
 }
-  
-private:
+ 
+
   
   mutable List<AbsPdf> m_pdfs;
   mutable List<Variable> m_fractions;
