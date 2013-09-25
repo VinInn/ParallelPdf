@@ -99,15 +99,15 @@ public:
  
     for (int l=0; l!=N; ++l) {
       auto pdf = m_pdfs()[l];
-      (*pdf)(state,pres[l], &(lres[l][0]), bsize, data, dataOffset);
+      pres[l] = (*pdf)(state, &(lres[l][0]), bsize, data, dataOffset);
     }
   
     
     Add<double,N> add;
-   auto invInt = invIntegral(state);
+    auto invInt = invIntegral(state);
     double const * __restrict__  const *  kres = pres;
     // double const * kres = lres[0];
-#pragma omp simd
+    // #pragma omp simd
     for (auto idx = 0; idx<bsize; ++idx) {
       // res[idx] = add(kres,coeff,idx,strid)*invIntegral;
       res[idx] = add(kres,coeff,idx)*invInt;

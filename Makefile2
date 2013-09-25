@@ -139,4 +139,4 @@ valgrind:
 	valgrind --tool=callgrind --simulate-cache=yes --collect-jumps=yes --separate-threads=yes --simulate-hwpref=yes --cacheuse=yes ./main -n 100000
 
 clean:
-	rm -rf *~ */*~ *.o *.out *.xnlog $(LIB) $(MAIN)_$(DIR) *.inc *.pomp.* $(DIR)/ tests/
+	rm -rf *~ */*~ *.o *.out *.xnlog $(LIB) $(MAIN)_$(DIR) *.inc *.pomp.* $(DIR) tests

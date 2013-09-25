@@ -27,8 +27,8 @@ class AbsPdf : public Named {
   virtual void RandomizeFloatParameters();
   virtual void GetParameters(List<Variable>& parameters) { }
 
-  void operator()(PdfState const & state, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
-    state.pdfVal(num(),res, loc, bsize,data,dataOffset);
+  double * operator()(PdfState const & state, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+    return state.pdfVal(num(), loc, bsize,data,dataOffset);
   }
   double invIntegral(PdfState const & state) const { return state.invIntegral(num()); }
 

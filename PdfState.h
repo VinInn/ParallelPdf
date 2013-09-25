@@ -24,7 +24,7 @@ public:
   // return integral for pdf i;
   virtual double invIntegral(size_t i) const =0;
   // fill res for pdf i;  res will contain the result, loc is a incoming "cache" to store values. if values stored in loc, res will point to loc 
-  virtual void pdfVal(size_t i, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const =0;
+  virtual double * pdfVal(size_t i,  double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const =0;
 
   virtual void cacheIntegral(size_t i) const =0;
   virtual void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset)  const =0;

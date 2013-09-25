@@ -40,7 +40,7 @@ class PdfPolynomial : public AbsPdf {
 public:
   using Poly = HornerPoly<double, N>;  // N is the number of coefficient, not the order, still below one adds one...
   
-  PdfPolynomial(const Char_t* name, const Char_t* title, Variable &x)  : AbsPdf(name,title,&x), m_x(&x) {}
+  PdfPolynomial(const Char_t* name, const Char_t* title, Variable &x)  : AbsPdf(name,title,&x), m_x(&x) {   m_nocache=true; }
   
   PdfPolynomial(const Char_t* name, const Char_t* title, Variable &x,
 		List<Variable> coeff) :

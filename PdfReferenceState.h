@@ -19,15 +19,19 @@ class PdfReferenceState : public PdfState {
 
 public:
 
+  std::vector<AbsPdf*> & pdfs() { return m_pdfs; }
+  std::vector<AbsPdf*> const & pdfs() const { return m_pdfs; }
+
   std::vector<Variable*> & variables() { return m_Params; }
   std::vector<Variable*> const & variables() const { return m_Params; }
+
 
   // return value for Paramer i;
   double paramVal(size_t i) const final { return m_parCache[i];}
   // return integral for pdf i;
   double invIntegral(size_t i) const final { return m_InvIntegrals[i];}
   // fill res for pdf i;
-  void pdfVal(size_t i, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
 
   void cacheIntegral(size_t i) const final;
   void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
@@ -61,7 +65,7 @@ private:
 
 
   std::vector<AbsPdf *> m_pdfs;
-  std::vector<unsigned short> m_indexCache; // some are not in cache....
+  std::vector<short> m_indexCache; // some are not in cache....
 
   std::vector<unsigned short> m_indexDep; // index in vector below
   std::vector<short> m_Dep; // direct dependencies
@@ -92,7 +96,7 @@ public:
   // return integral for pdf i;
   double invIntegral(size_t i) const final { auto k = findPdf(i); return k>=0 ? m_InvIntegrals[k] : m_reference->invIntegral(i); }
   // fill res for pdf i;
-  void pdfVal(size_t i, double * __restrict__ res, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
 
   void cacheIntegral(size_t i) const final;
   void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
@@ -117,5 +121,29 @@ private:
 
 };
 
+
+class PdfNoCacheState  : public PdfState {
+
+public:
+
+  explicit PdfNoCacheState(PdfReferenceState const * ref) :
+    m_reference(ref){}
+
+
+  // return value for Paramer i;
+  double paramVal(size_t i) const final { return  m_reference->paramVal(i);}
+  // return integral for pdf i;
+  double invIntegral(size_t i) const final { return  m_reference->invIntegral(i); }
+  // fill res for pdf i;
+  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+
+  void cacheIntegral(size_t i) const final { m_reference->cacheIntegral(i); }
+  void cachePdf(size_t, unsigned int, const Data &, unsigned int) const final {}
+
+private:
+
+  PdfReferenceState const * m_reference;
+
+};
 
 #endif

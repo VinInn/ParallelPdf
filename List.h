@@ -17,9 +17,9 @@ template<class T> class List : public Named {
  public:
  
   List() : Named("list","list",list) { ResetIterator(); }
- explicit List(T &element1) : Named("list","list") { AddElement(element1); ResetIterator(); }
- List(T &element1, T &element2) : Named("list","list") { AddElement(element1); AddElement(element2); ResetIterator(); }
- List(T &element1, T &element2, T &element3) : Named("list","list") {
+  explicit List(T &element1) : Named("list","list",list) { AddElement(element1); ResetIterator(); }
+  List(T &element1, T &element2) : Named("list","list",list) { AddElement(element1); AddElement(element2); ResetIterator(); }
+  List(T &element1, T &element2, T &element3) : Named("list","list",list) {
     AddElement(element1); AddElement(element2); AddElement(element3);
     ResetIterator();
   }

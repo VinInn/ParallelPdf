@@ -92,7 +92,7 @@ public:
  
     for (int l=0; l!=15; ++l) {
       auto pdf = m_pdfs()[l];
-      (*pdf)(state,pres[l], &(lres[l][0]), bsize, data, dataOffset);
+      pres[l] = (*pdf)(state, &(lres[l][0]), bsize, data, dataOffset);
     }
 
 
