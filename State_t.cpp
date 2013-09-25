@@ -41,14 +41,17 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
 }
 
 
-void refresh(const Data & data, int ivar , bool force) {
+void refresh(const Data & data, int ivar , bool all) {
+  auto mpdf = PdfReferenceState::me().pdfs().back();
+
   std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
   PdfReferenceState const & state = PdfReferenceState::me();
-  PdfReferenceState::me().refresh(pdfs,dep,ivar,force);
+  PdfReferenceState::me().refresh(pdfs,dep,ivar, true, all);
   assert(pdfs.size()==dep.size());
   for (auto i=0U; i<pdfs.size(); ++i)
     std::cout << pdfs[i] <<"," << dep[i] <<" ";
   std::cout << std::endl;
+  if (!pdfs.empty()) assert(mpdf->num()==pdfs.back());
 
   // the order is correct...
   for (auto i: pdfs) state.cacheIntegral(i);
@@ -61,13 +64,13 @@ void refresh(const Data & data, int ivar , bool force) {
     auto offset = ie;
     auto bsize = std::min(256U,tot-ie);
     for (auto i: pdfs) state.cachePdf(i,bsize,data,offset);
-    res = state.pdfVal(pdfs.back(), lres, bsize,data,offset);
+    res = state.pdfVal(mpdf->num(), lres, bsize,data,offset);
     assert(res==&lres[0]);
     localValue = IntLogAccumulate(localValue, lres, bsize);
   }
   auto ret = -0.693147182464599609375*localValue.value();
   
-  ret += state.pdf(pdfs.back())->ExtendedTerm(state,tot);
+  ret += mpdf->ExtendedTerm(state,tot);
 
   std::cout << "result " << ret << std::endl;
 
@@ -96,28 +99,40 @@ int main() {
   PdfReferenceState::me().print();
 
   refresh(data, -1,true);
+  std::cout << std::endl;
+  refresh(data,-1,false);
+  std::cout << std::endl;
+  std::cout << std::endl;
 
 
   // this is not the way how it will be done as it is not thread safe...
 
   auto & vars = PdfReferenceState::me().m_Params;
-
-  for (auto i = 0U; i!=vars.size(); ++i) {
-    if (vars[i]->isData() || vars[i]->IsConstant()) continue;
-    auto v = vars[i]->GetVal();
-    auto e = vars[i]->GetError();
-    vars[i]->SetVal(v+e);
-    std::cout << "var " << i << ":   ";
-    refresh(data,-1,false);
+  for (auto ak=0; ak!=2; ++ak) {
+    for (auto i = 0U; i!=vars.size(); ++i) {
+      if (vars[i]->isData() || vars[i]->IsConstant()) continue;
+      auto v = vars[i]->GetVal();
+      auto e = vars[i]->GetError();
+      vars[i]->SetVal(v+e);
+      std::cout << "var " << i << ":   ";
+      refresh(data,-1,false);
+      if (ak==1) vars[i]->SetVal(v-e);
+    }
+    std::cout << std::endl;
   }
+  refresh(data,-1,false);
+  std::cout << std::endl;
+  refresh(data,-1,false);
   std::cout << std::endl;
   std::cout << std::endl;
-
   for (auto i = 0U; i!=vars.size(); ++i) {
     if (vars[i]->isData() || vars[i]->IsConstant()) continue;
     std::cout << "var " << i << ":   ";
-    refresh(data,i,true);
+    refresh(data,i,false);
   }
+  refresh(data,-1,false);
+  std::cout << std::endl;
+  refresh(data, -1,true);
   std::cout << std::endl;
   std::cout << std::endl;
 

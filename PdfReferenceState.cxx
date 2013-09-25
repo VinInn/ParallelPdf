@@ -51,7 +51,7 @@ void PdfReferenceState::cachePdf(size_t i, unsigned int bsize, const Data & data
 
 
 
-void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool force) {
+void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache, bool allPdf) {
 
   struct ToRefresh {
     ToRefresh(){}
@@ -76,29 +76,32 @@ void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<u
   };
 
   auto refreshI = [&](unsigned int i) {
-    if (m_Params[i]->isData()) return;
-    if (force || m_parCache[i]!=m_Params[i]->GetVal()) {
-      if (ivar<0) m_parCache[i]=m_Params[i]->GetVal();
-      for (auto k=m_indexPdf[i]; k!=m_indexPdf[i+1]; ++k) {
-	auto kp = m_PdfsPar[k];
-	std::tie(iter, ok) = toRefresh.emplace(kp,1); // depends on integral
-	if (ok) walk(kp);
-      }
+    for (auto k=m_indexPdf[i]; k!=m_indexPdf[i+1]; ++k) {
+      auto kp = m_PdfsPar[k];
+      std::tie(iter, ok) = toRefresh.emplace(kp,1); // depends on integral
+      if (ok) walk(kp);
     }
   };
 
   if (ivar>=0) refreshI(ivar);
-  else if (force) {
+  else if (allPdf) {
+    if (doCache) for (auto i = 0U; i!=m_Params.size(); ++i) {
+	if (m_Params[i]->isData()) continue;
+	m_parCache[i]=m_Params[i]->GetVal();
+      }
     for (auto k=0U; k!=m_pdfs.size(); ++k) {
       std::tie(iter, ok) = toRefresh.emplace(k,1); // depends on integral
       if (ok) walk(k);
     }
   } else {
     for (auto i = 0U; i!=m_Params.size(); ++i) {
-      refreshI(i);
-    }
-  }  
-  
+      if (m_Params[i]->isData()) continue;
+      if (m_parCache[i]!=m_Params[i]->GetVal()) {
+	if (doCache) m_parCache[i]=m_Params[i]->GetVal();
+	refreshI(i);
+      }
+    }  
+  }
   for ( auto s : toRefresh) { res.push_back(s.ind); dep.push_back(s.deps);}
 
 }

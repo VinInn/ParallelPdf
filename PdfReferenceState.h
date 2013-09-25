@@ -37,8 +37,15 @@ public:
   void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
 
 
+  void allDeps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool doCache) {
+    refresh(res,dep,-1, doCache, true);
+  }
 
-  void refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar=-1, bool force=false);
+  void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache) {
+    refresh(res,dep,ivar,doCache,false);
+  }
+
+  void refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache, bool allPdf);
 
   AbsPdf * pdf(int i) {return m_pdfs[i];}
   AbsPdf const * pdf(int i) const {return m_pdfs[i];}
