@@ -37,9 +37,9 @@ class AbsPdf : public Named {
 
 
 
-  virtual Double_t ExtendedTerm(UInt_t observed) const { return .0; }
+  virtual Double_t ExtendedTerm(PdfState const &, UInt_t) const { return .0; }
   virtual Bool_t IsExtended() const { return kFALSE; }
-  virtual Double_t ExpectedEvents() const { return .0; }
+  virtual Double_t ExpectedEvents(PdfState const &) const { return .0; }
 
   bool noCache() const { return m_nocache;}
 

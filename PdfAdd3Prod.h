@@ -29,7 +29,7 @@ class PdfAdd3Prod final : public NoCacheAbsPdf {
 public:
 
   PdfAdd3Prod (const Char_t* name, const Char_t* title, List<AbsPdf> pdfs, List<Variable> fractions) :
-    NoCacheAbsPdf(name,title, &pdfs, &fractions)
+    NoCacheAbsPdf(name,title, &pdfs, &fractions),
     m_isExtended(kFALSE)
   {
     
@@ -43,21 +43,23 @@ public:
     
     m_pdfs.AddElement(pdfs);
     m_fractions.AddElement(fractions);
-    makeParameterCache();
     
   }
   
 
   virtual ~PdfAdd3Prod () { }
     
-  
-  virtual void GetParameters(List<Variable>& parameters) 
+    virtual void GetParameters(List<Variable>& parameters) 
   {
-    parameters()=m_AllParams;
- 
+    parameters.AddElement(m_fractions);
+    AbsPdf *pdf(0);
+    List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
+    while ((pdf = iter_pdfs.Next())!=0) {
+      pdf->GetParameters(parameters);
+    }
   }
-  
 
+  
 
   virtual double integral(PdfState const & state) const { return m_isExtended ? ExpectedEvents(state) : 1.; }
   
@@ -90,7 +92,7 @@ public:
  
     for (int l=0; l!=15; ++l) {
       auto pdf = m_pdfs()[l];
-      (*pdf)(state,pres[l], &(lres[l][0], bsize, data, dataOffset);
+      (*pdf)(state,pres[l], &(lres[l][0]), bsize, data, dataOffset);
     }
 
 

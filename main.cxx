@@ -72,11 +72,11 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 
     // first count 
     int nvar=0;
-    for ( auto p :  pdfPars ) if (!pdfPars[ip]->IsConstant() || !pdfPars[ip]->isData()) ++nvar;
+    for ( auto p :  pdfPars ) if (!p->IsConstant() || !p->isData()) ++nvar;
     
     int var[nvar];
-    int k=0;
-    for ( auto p :  pdfPars ) if (!pdfPars[ip]->IsConstant() || !pdfPars[ip]->isData()) var[k++]= ip;
+    int k=0; int ip=0;
+    for ( auto p :  pdfPars ) { if (!p->IsConstant() || !p->isData()) var[k++]= ip; ++ip;}
     assert(k==nvar);
    
 
@@ -244,7 +244,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
       }
       else {
 	for(int k=0; k!=nvar; ++k) {
-	  auto vr = pdfPars()[var[k]];
+	  auto vr = pdfPars[var[k]];
 	  auto v = vr->GetVal();
 	  auto e = vr->GetError();
 	  vr->SetAllVal(v+e);

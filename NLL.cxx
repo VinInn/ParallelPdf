@@ -37,7 +37,7 @@ NLL::~NLL() {
     std::cout << std::endl;
   }
 
-  std::cout << "\nCache size " << m_pdf->cacheSize() << std::endl;
+  // std::cout << "\nCache size " << m_pdf->cacheSize() << std::endl;
 
 }
 
@@ -63,14 +63,15 @@ double  NLL::GetVal(PdfState& state, std::vector<unsigned short> const & pdfs) {
   for (auto i: pdfs) state.cacheIntegral(i);
 
 
-  alignas(ALIGNMENT) double res[m_nBlockEvents];
-  double * lres=0;
+  alignas(ALIGNMENT) double lres[m_nBlockEvents];
+  double * res=0;
   TMath::IntLog localValue;
   for (auto ie=start; ie<start+size; ie+= m_nBlockEvents) {
     auto offset = ie;
     auto bsize = std::min(m_nBlockEvents,(start+size)-ie);
-    m_pdf->values(state,res, lres, bsize, *m_data, offset);  
-    PartialNegReduction(localValue,res,bsize);
+    (*m_pdf)(state,  res, lres, bsize, *m_data, offset);
+    assert(res==&lres[0]);
+    PartialNegReduction(localValue,lres,bsize);
   }
   auto ret = -0.693147182464599609375*localValue.value();
 
@@ -85,8 +86,9 @@ Double_t NLL::GetVal(bool verify)
 {
 
   std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
-  PdfReferenceState::me().refresh(res,dep,-1,!doCache);
+  PdfReferenceState::me().refresh(pdfs,dep,-1,!docache);
 
+  PdfState& state = PdfReferenceState::me();
 
   static bool first=true;
   if (first) {
@@ -121,7 +123,7 @@ Double_t NLL::GetVal(bool verify)
     {
       
       // isOk = 
-      nloops[omp_get_thread_num()]  = RunEvaluationBlockSplittingDynamic(istart, iend);
+      nloops[omp_get_thread_num()]  = RunEvaluationBlockSplittingDynamic(state,istart, iend);
       
     }
     int k=0;
@@ -146,7 +148,7 @@ Double_t NLL::GetVal(bool verify)
     {
       
       // isOk = 
-      RunEvaluationBlockSplittingStatic();
+      RunEvaluationBlockSplittingStatic(state);
       
     }
 
@@ -161,18 +163,18 @@ Double_t NLL::GetVal(bool verify)
   
   //final reduction
   __float128 ss=0.;
-  for (unsigned int i=0; i!=OpenMP::GetMaxNumThreads(); ++i)
+  for (int i=0; i!=OpenMP::GetMaxNumThreads(); ++i)
     ss+=  __float128(-0.693147182464599609375*m_logs[i].value());
 
   if (m_pdf->IsExtended()) {
-    ss += m_pdf->ExtendedTerm(m_data->GetEntries());
+    ss += m_pdf->ExtendedTerm(PdfReferenceState::me(),m_data->GetEntries());
   }
 
 
   return ss;
 }
 
-int NLL::RunEvaluationBlockSplittingStatic() {
+int NLL::RunEvaluationBlockSplittingStatic(PdfState const & state) {
   
   int iStart=0, iEnd=0;
   unsigned int ntot = OpenMP::GetThreadElements(m_data->GetEntries(),iStart,iEnd);
@@ -190,12 +192,14 @@ int NLL::RunEvaluationBlockSplittingStatic() {
   }
   */
 
-  alignas(ALIGNMENT) double res[m_nBlockEvents];
+  alignas(ALIGNMENT) double lres[m_nBlockEvents];
+  double * res = lres;
   auto localValue = m_logs[OpenMP::GetRankThread()];  
   for (UInt_t ie=0; ie<ntot; ie+= m_nBlockEvents) {
     auto offset = iStart+ie;
     auto bsize = std::min(m_nBlockEvents,ntot-ie);
-    m_pdf->GetVal(res, bsize, *m_data, offset);  
+    (*m_pdf)(state,  res, lres, bsize, *m_data, offset);
+    assert(res==&lres[0]);
     PartialNegReduction(localValue,res,bsize);
   }
   m_logs[OpenMP::GetRankThread()] = localValue;
@@ -203,7 +207,7 @@ int NLL::RunEvaluationBlockSplittingStatic() {
   return 1;
 }
 
-int NLL::RunEvaluationBlockSplittingDynamic(std::atomic<int> * istart, int const * iend) {
+int NLL::RunEvaluationBlockSplittingDynamic(PdfState const & state, std::atomic<int> * istart, int const * iend) {
 
   int chunk = 4*m_nBlockEvents;
   int endgame = omp_get_num_threads()*chunk;
@@ -214,7 +218,8 @@ int NLL::RunEvaluationBlockSplittingDynamic(std::atomic<int> * istart, int const
   std::atomic<int> & start = istart[ig];
   auto end = iend[ig];
 
-  alignas(ALIGNMENT) double res[m_nBlockEvents];
+  alignas(ALIGNMENT) double lres[m_nBlockEvents];
+  double * res=0;
   auto localValue = m_logs[k];  
 
   int lp=0;
@@ -230,8 +235,9 @@ int NLL::RunEvaluationBlockSplittingDynamic(std::atomic<int> * istart, int const
     for (int ie=0; ie<ln; ie+= m_nBlockEvents) {
       auto offset = ls+ie;
       auto bsize = std::min(int(m_nBlockEvents),ln-ie);
-      m_pdf->GetVal(res, bsize, *m_data, offset);  
-      PartialNegReduction(localValue,res,bsize);
+      (*m_pdf)(state,  res, lres, bsize, *m_data, offset);
+      assert(res==&lres[0]);
+      PartialNegReduction(localValue,lres,bsize);
     }
 
   }

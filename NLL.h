@@ -20,9 +20,9 @@ class NLL : public Named {
   ~NLL();  
 
   // parallel esecution
-  Double_t GetVal(bool verify=true);
+  double GetVal(bool verify=true);
 
-  // assume only lpar changed (as in derivatives); sequential
+  //  sequential
   double GetVal(PdfState& state, std::vector<unsigned short> const & pdfs);
 
 
@@ -38,8 +38,8 @@ class NLL : public Named {
 
 private:
 
-  int RunEvaluationBlockSplittingStatic();
-  int RunEvaluationBlockSplittingDynamic(std::atomic<int> * istart, int const * iend);
+  int RunEvaluationBlockSplittingStatic(PdfState const & state);
+  int RunEvaluationBlockSplittingDynamic(PdfState const & state, std::atomic<int> * istart, int const * iend);
 
 
   // Sequential vectorized reduction using IntLog

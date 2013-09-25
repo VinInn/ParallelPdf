@@ -46,19 +46,6 @@ public:
   virtual ~PdfProd() { }
   
     
-  virtual void CacheIntegral(int lpar=-2) final {
-    AbsPdf::CacheIntegral();
-    for (auto pdf : m_pdfs()) pdf->CacheIntegral(lpar);
-  }
- 
-
-  virtual void CacheAllIntegral(){
-    AbsPdf::CacheAllIntegral();
-    for (auto pdf : m_pdfs()) pdf->CacheAllIntegral();
-  }     
-    
-  
-  
   virtual void GetParameters(List<Variable>& parameters){
     AbsPdf *pdf(0);
     List<AbsPdf>::Iterator iter_pdfs(m_pdfs.GetIterator());
@@ -82,14 +69,14 @@ private:
 
     for (int l=0; l!=N; ++l) {
       auto pdf = m_pdfs()[l];
-      (*pdf)(state,pres[l], &(lres[l][0], bsize, data, dataOffset);
+      (*pdf)(state,pres[l], &(lres[l][0]), bsize, data, dataOffset);
     }
 
     
     Mult<double,N> mult;
     double const * __restrict__  const *  kres = pres;
 #pragma omp simd
-    for (auto idx = 0; idx!=bsize; ++idx) {
+    for (auto idx = 0; idx<bsize; ++idx) {
       res[idx] = mult(kres,idx);
     }
   }
