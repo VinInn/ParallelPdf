@@ -150,17 +150,17 @@ class PdfNoCacheState  : public PdfState {
 public:
 
   explicit PdfNoCacheState(PdfReferenceState const * ref) :
-    m_reference(ref){}
+  m_reference(ref),m_InvIntegrals(ref->pdfs().size()){}
 
 
   // return value for Paramer i;
   double paramVal(size_t i) const final;
   // return integral for pdf i;
-  double invIntegral(size_t i) const final { return  m_reference->invIntegral(i); }
+  double invIntegral(size_t i) const final { return m_InvIntegrals[i]; }
   // fill res for pdf i;
   double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
 
-  void cacheIntegral(size_t i) const final { m_reference->cacheIntegral(i); }
+  void cacheIntegral(size_t i) const final;
   void cachePdf(size_t, unsigned int, const Data &, unsigned int) const final {}
 
  
@@ -177,6 +177,7 @@ public:
 private:
 
   PdfReferenceState const * m_reference;
+  mutable std::vector<double> m_InvIntegrals;
 
 };
 

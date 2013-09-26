@@ -89,9 +89,15 @@ Double_t NLL::GetVal(bool verify)
 {
 
   std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
-  PdfReferenceState::me().refresh(pdfs,dep,-1,docache,!verify);
 
-  PdfState& state = PdfReferenceState::me();
+  PdfReferenceState& refState = PdfReferenceState::me();
+  PdfNoCacheState ncState(&refState);
+
+  PdfState * pState = docache ? (PdfState *)(&refState) : (PdfState *)(&ncState);
+  PdfState& state = *pState;
+
+  if (verify) state.deps(pdfs,dep, docache);
+  else state.allDeps(pdfs,dep, docache);
 
   static bool first=true;
   if (first) {
@@ -170,7 +176,7 @@ Double_t NLL::GetVal(bool verify)
     ss+=  __float128(-0.693147182464599609375*m_logs[i].value());
 
   if (m_pdf->IsExtended()) {
-    ss += m_pdf->ExtendedTerm(PdfReferenceState::me(),m_data->GetEntries());
+    ss += m_pdf->ExtendedTerm(state,m_data->GetEntries());
   }
 
 

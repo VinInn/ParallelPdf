@@ -125,15 +125,18 @@ int main() {
   // this is not the way how it will be done as it is not thread safe...
 
   auto & vars = PdfReferenceState::me().m_Params;
-  for (auto ak=0; ak!=2; ++ak) {
+  for (auto ak=0; ak!=4; ++ak) {
     for (auto i = 0U; i!=vars.size(); ++i) {
       if (vars[i]->isData() || vars[i]->IsConstant()) continue;
       auto v = vars[i]->GetVal();
       auto e = vars[i]->GetError();
       vars[i]->SetVal(v+e);
       std::cout << "var " << i << ":   ";
-      refresh(refState, data,-1,false, true);
-      if (ak==1) vars[i]->SetVal(v-e);
+      if (ak>1) 
+	refresh(ncState, data, -1,true,false);
+      else
+	refresh(refState, data,-1,false, true);
+      if (ak%2==1) vars[i]->SetVal(v-e);
     }
     std::cout << std::endl;
   }
