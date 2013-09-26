@@ -23,7 +23,7 @@ class NLL : public Named {
   double GetVal(bool verify=true);
 
   //  sequential
-  double GetVal(PdfState& state, std::vector<unsigned short> const & pdfs);
+  double GetVal(PdfState& state);
 
 
   inline AbsPdf *GetPdf() { return m_pdf; }
@@ -38,8 +38,8 @@ class NLL : public Named {
 
 private:
 
-  int RunEvaluationBlockSplittingStatic(PdfState const & state);
-  int RunEvaluationBlockSplittingDynamic(PdfState const & state, std::atomic<int> * istart, int const * iend);
+  int RunEvaluationBlockSplittingStatic(PdfState const & state, std::vector<unsigned short> const & pdfs);
+  int RunEvaluationBlockSplittingDynamic(PdfState const & state, std::vector<unsigned short> const & pdfs, std::atomic<int> * istart, int const * iend);
 
 
   // Sequential vectorized reduction using IntLog
@@ -47,7 +47,7 @@ private:
 				  const Double_t *  __restrict__ pResults, unsigned int bsize) {
     pResults = (double * __restrict__)__builtin_assume_aligned(pResults,ALIGNMENT);
     value = IntLogAccumulate(value, pResults, bsize);
-      }
+  }
 
  private:
 

@@ -65,6 +65,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
   double start = Timer::Wtime();
 
   if (Iter>0) {
+    PdfReferenceState & refState = PdfReferenceState::me();
 
     auto pdfPars = PdfReferenceState::me().variables();
     auto v1 = nll.GetVal(false); // init cache if needed
@@ -229,13 +230,11 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 	    auto v = vr->GetVal();
 	    auto e = vr->GetError();
 	    auto nv = pm ? v+e : v-e;
-	    vr->SetVal(nv);
+	    PdfModifiedState mstate(&refState,var[ik], nv);
 	    if (pm) 
-	      lval[omp_get_thread_num()] += nll.GetVal(var[ik]);
+	      lval[omp_get_thread_num()] += nll.GetVal(mstate);
 	    else 
-	      lval[omp_get_thread_num()] -= nll.GetVal(var[ik]);
-
-	    vr->SetVal(v);
+	      lval[omp_get_thread_num()] -= nll.GetVal(mstate);
 	    ok[ik]++;
 	  }
 	} // end parallel section

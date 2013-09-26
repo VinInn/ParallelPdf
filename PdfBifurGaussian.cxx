@@ -24,10 +24,11 @@ Double_t PdfBifurGaussian::integral(PdfState const & state) const
     integral = m_sigmaL->value(state)*(TMath::Erf((m_x->GetMax()-m_mu->value(state))*invxscaleL)-TMath::Erf((m_x->GetMin()-m_mu->value(state))*invxscaleL));
   }
   else if (m_x->GetMin() > m_mu->value(state)) {
-    integral = m_sigmaR->GetVal()*(TMath::Erf((m_x->GetMax()-m_mu->value(state))*invxscaleR)-TMath::Erf((m_x->GetMin()-m_mu->value(state))*invxscaleR));
+    integral = m_sigmaR->value(state)*(TMath::Erf((m_x->GetMax()-m_mu->value(state))*invxscaleR)-TMath::Erf((m_x->GetMin()-m_mu->value(state))*invxscaleR));
   }
   else {
-    integral = m_sigmaR->GetVal()*TMath::Erf((m_x->GetMax()-m_mu->value(state))*invxscaleR)-m_sigmaL->value(state)*TMath::Erf((m_x->GetMin()-m_mu->value(state))*invxscaleL);
+    integral = m_sigmaR->value(state)*TMath::Erf((m_x->GetMax()-m_mu->value(state))*invxscaleR)
+      -m_sigmaL->value(state)*TMath::Erf((m_x->GetMin()-m_mu->value(state))*invxscaleL);
   }
 
   return integral*rootPiBy2;

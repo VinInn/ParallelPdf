@@ -44,7 +44,7 @@ NLL::~NLL() {
 
 
 
-double  NLL::GetVal(PdfState& state, std::vector<unsigned short> const & pdfs) {
+double  NLL::GetVal(PdfState& state) {
   // assume to be in a thread..
 
 
@@ -59,6 +59,9 @@ double  NLL::GetVal(PdfState& state, std::vector<unsigned short> const & pdfs) {
     start =  m_data->startP();
     size   =  m_data->sizeP();
   }
+
+  std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
+  state.deps(pdfs,dep, false);
 
   for (auto i: pdfs) state.cacheIntegral(i);
 
@@ -123,7 +126,7 @@ Double_t NLL::GetVal(bool verify)
     {
       
       // isOk = 
-      nloops[omp_get_thread_num()]  = RunEvaluationBlockSplittingDynamic(state,istart, iend);
+      nloops[omp_get_thread_num()]  = RunEvaluationBlockSplittingDynamic(state, pdfs, istart, iend);
       
     }
     int k=0;
@@ -148,7 +151,7 @@ Double_t NLL::GetVal(bool verify)
     {
       
       // isOk = 
-      RunEvaluationBlockSplittingStatic(state);
+      RunEvaluationBlockSplittingStatic(state, pdfs);
       
     }
 
@@ -174,7 +177,7 @@ Double_t NLL::GetVal(bool verify)
   return ss;
 }
 
-int NLL::RunEvaluationBlockSplittingStatic(PdfState const & state) {
+int NLL::RunEvaluationBlockSplittingStatic(PdfState const & state, std::vector<unsigned short> const & pdfs) {
   
   int iStart=0, iEnd=0;
   unsigned int ntot = OpenMP::GetThreadElements(m_data->GetEntries(),iStart,iEnd);
@@ -198,6 +201,7 @@ int NLL::RunEvaluationBlockSplittingStatic(PdfState const & state) {
   for (UInt_t ie=0; ie<ntot; ie+= m_nBlockEvents) {
     auto offset = iStart+ie;
     auto bsize = std::min(m_nBlockEvents,ntot-ie);
+    for (auto i: pdfs) state.cachePdf(i,bsize,*m_data,offset);
     res = (*m_pdf)(state, lres, bsize, *m_data, offset);
     assert(res==&lres[0]);
     PartialNegReduction(localValue,res,bsize);
@@ -207,7 +211,7 @@ int NLL::RunEvaluationBlockSplittingStatic(PdfState const & state) {
   return 1;
 }
 
-int NLL::RunEvaluationBlockSplittingDynamic(PdfState const & state, std::atomic<int> * istart, int const * iend) {
+int NLL::RunEvaluationBlockSplittingDynamic(PdfState const & state, std::vector<unsigned short> const & pdfs, std::atomic<int> * istart, int const * iend) {
 
   int chunk = 4*m_nBlockEvents;
   int endgame = omp_get_num_threads()*chunk;
@@ -235,6 +239,7 @@ int NLL::RunEvaluationBlockSplittingDynamic(PdfState const & state, std::atomic<
     for (int ie=0; ie<ln; ie+= m_nBlockEvents) {
       auto offset = ls+ie;
       auto bsize = std::min(int(m_nBlockEvents),ln-ie);
+      for (auto i: pdfs) state.cachePdf(i,bsize,*m_data,offset);
       res = (*m_pdf)(state, lres, bsize, *m_data, offset);
       assert(res==&lres[0]);
       PartialNegReduction(localValue,lres,bsize);
