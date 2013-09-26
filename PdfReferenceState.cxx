@@ -7,9 +7,11 @@
 
 #include<iostream>
 
+double PdfNoCacheState::paramVal(size_t i) const { return  m_reference->variables()[i]->GetVal();}
+
 
 double * PdfNoCacheState::pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
-m_reference->pdf(i)->values(*this,loc,bsize,data,dataOffset); return loc;
+  m_reference->pdf(i)->values(*this,loc,bsize,data,dataOffset); return loc;
 }
 
 double * PdfModifiedState::pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
@@ -51,7 +53,7 @@ void PdfReferenceState::cachePdf(size_t i, unsigned int bsize, const Data & data
 
 
 
-void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache, bool allPdf) {
+void PdfReferenceState::refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache, bool allPdf) const {
 
   struct ToRefresh {
     ToRefresh(){}

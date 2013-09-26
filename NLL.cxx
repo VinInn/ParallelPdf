@@ -86,7 +86,7 @@ Double_t NLL::GetVal(bool verify)
 {
 
   std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
-  PdfReferenceState::me().refresh(pdfs,dep,-1,docache,verify);
+  PdfReferenceState::me().refresh(pdfs,dep,-1,docache,!verify);
 
   PdfState& state = PdfReferenceState::me();
 

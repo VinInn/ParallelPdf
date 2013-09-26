@@ -125,7 +125,7 @@ template<class T> class List : public Named {
     std::cout << "# Total Parameters = " << GetSize() << std::endl;
     Int_t nSize(0);
     while (iter!=m_list.end()) {
-      if (!onlyFloat || !((*iter)->IsConstant())) {
+      if (!onlyFloat || ( !((*iter)->isData()) && !((*iter)->IsConstant())) ) {
 	(*iter)->Print();
 	nSize++;
       }

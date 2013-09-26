@@ -41,12 +41,13 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
 }
 
 
-void refresh(const Data & data, int ivar , bool all) {
+void refresh(PdfState & state, const Data & data, int ivar , bool all, bool docache) {
   auto mpdf = PdfReferenceState::me().pdfs().back();
 
   std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
-  PdfReferenceState const & state = PdfReferenceState::me();
-  PdfReferenceState::me().refresh(pdfs,dep,ivar, true, all);
+  if (all) state.allDeps(pdfs,dep, docache);
+  else state.deps(pdfs,dep, docache);
+
   assert(pdfs.size()==dep.size());
   for (auto i=0U; i<pdfs.size(); ++i)
     std::cout << pdfs[i] <<"," << dep[i] <<" ";
@@ -94,13 +95,22 @@ int main() {
 
   auto model = Model(x,y,z,N);
   
-  PdfReferenceState::me().init(data.GetEntries());
-  
-  PdfReferenceState::me().print();
+  PdfReferenceState & refState = PdfReferenceState::me();
 
-  refresh(data, -1,true);
+  refState.init(data.GetEntries());
+  
+  refState.print();
+
+
+  PdfNoCacheState ncState(&refState);
+
+  refresh(ncState, data, -1,true,false);
   std::cout << std::endl;
-  refresh(data,-1,false);
+
+
+  refresh(refState, data, -1,true,true);
+  std::cout << std::endl;
+  refresh(refState, data,-1,false,true);
   std::cout << std::endl;
   std::cout << std::endl;
 
@@ -115,24 +125,29 @@ int main() {
       auto e = vars[i]->GetError();
       vars[i]->SetVal(v+e);
       std::cout << "var " << i << ":   ";
-      refresh(data,-1,false);
+      refresh(refState, data,-1,false, true);
       if (ak==1) vars[i]->SetVal(v-e);
     }
     std::cout << std::endl;
   }
-  refresh(data,-1,false);
+  refresh(refState,data,-1,false, true);
   std::cout << std::endl;
-  refresh(data,-1,false);
+  refresh(refState,data,-1,false,true);
   std::cout << std::endl;
   std::cout << std::endl;
+
+
   for (auto i = 0U; i!=vars.size(); ++i) {
     if (vars[i]->isData() || vars[i]->IsConstant()) continue;
+    auto v = vars[i]->GetVal();
+    auto e = vars[i]->GetError();
+    PdfModifiedState mstate(&refState,i, v+e);
     std::cout << "var " << i << ":   ";
-    refresh(data,i,false);
+    refresh(mstate, data,i,false,false);
   }
-  refresh(data,-1,false);
+  refresh(refState, data,-1,false,true);
   std::cout << std::endl;
-  refresh(data, -1,true);
+  refresh(refState, data, -1,true,true);
   std::cout << std::endl;
   std::cout << std::endl;
 

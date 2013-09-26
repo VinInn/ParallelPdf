@@ -72,11 +72,11 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 
     // first count 
     int nvar=0;
-    for ( auto p :  pdfPars ) if (!p->IsConstant() || !p->isData()) ++nvar;
+    for ( auto p :  pdfPars ) if (!p->IsConstant() && !p->isData()) ++nvar;
     
     int var[nvar];
     int k=0; int ip=0;
-    for ( auto p :  pdfPars ) { if (!p->IsConstant() || !p->isData()) var[k++]= ip; ++ip;}
+    for ( auto p :  pdfPars ) { if (!p->IsConstant() && !p->isData()) var[k++]= ip; ++ip;}
     assert(k==nvar);
    
 

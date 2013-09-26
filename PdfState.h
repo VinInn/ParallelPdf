@@ -2,6 +2,7 @@
 #define PdfState_H
 
 #include <cstddef>
+#include <vector>
 
 class AbsPdf;
 class Variable;
@@ -29,6 +30,9 @@ public:
   virtual void cacheIntegral(size_t i) const =0;
   virtual void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset)  const =0;
 
+
+  virtual void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep,  bool doCache) const =0;
+  virtual void allDeps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool doCache) const =0;
 
 };
 

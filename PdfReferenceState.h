@@ -36,16 +36,19 @@ public:
   void cacheIntegral(size_t i) const final;
   void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
 
+  void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool doCache) const {
+    refresh(res,dep,-1, doCache, false);
+  }
 
-  void allDeps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool doCache) {
+  void allDeps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool doCache) const final {
     refresh(res,dep,-1, doCache, true);
   }
 
-  void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache) {
+  void depsI(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache) const {
     refresh(res,dep,ivar,doCache,false);
   }
 
-  void refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache, bool allPdf);
+  void refresh(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, int ivar, bool doCache, bool allPdf) const;
 
   AbsPdf * pdf(int i) {return m_pdfs[i];}
   AbsPdf const * pdf(int i) const {return m_pdfs[i];}
@@ -81,7 +84,7 @@ private:
   std::vector<unsigned short> m_indexPdf; // index in the vector below...
   std::vector<short> m_PdfsPar;  // pdf corresponding to a par... 
 
-  std::vector<double> m_parCache; // cache of param 
+  mutable std::vector<double> m_parCache; // cache of param 
   mutable Data m_resCache;   // cache of pdfs results
   mutable std::vector<double> m_InvIntegrals; // cache of inverseIntegrals
 
@@ -94,8 +97,11 @@ class PdfModifiedState  : public PdfState {
 
 public:
 
-  PdfModifiedState(PdfReferenceState const * ref, unsigned int ipar, double v, std::vector<unsigned short> const & ipdfs) :
-    m_reference(ref),  m_param(ipar), m_pdfs(ipdfs), m_value(v){}
+  PdfModifiedState(PdfReferenceState const * ref, unsigned int ipar, double v) :
+    m_reference(ref),  m_param(ipar), m_value(v){
+    ref->depsI(m_pdfs,m_deps,ipar,false);
+    m_InvIntegrals.resize(m_pdfs.size());
+  }
 
 
   // return value for Paramer i;
@@ -109,6 +115,14 @@ public:
   void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
 
 
+  void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool) const final {
+    res = m_pdfs; dep = m_deps;
+  }
+
+  void allDeps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool) const final {
+    m_reference->allDeps(res,dep, true);
+  }
+
 private:
 
   int findPdf(size_t i) const {
@@ -117,10 +131,12 @@ private:
   }
 
   PdfReferenceState const * m_reference;
-  
-  unsigned short m_param;
 
   std::vector<unsigned short> m_pdfs;
+  std::vector<unsigned short> m_deps;
+
+  
+  unsigned short m_param;
 
   double m_value;
 
@@ -138,7 +154,7 @@ public:
 
 
   // return value for Paramer i;
-  double paramVal(size_t i) const final { return  m_reference->paramVal(i);}
+  double paramVal(size_t i) const final;
   // return integral for pdf i;
   double invIntegral(size_t i) const final { return  m_reference->invIntegral(i); }
   // fill res for pdf i;
@@ -146,6 +162,17 @@ public:
 
   void cacheIntegral(size_t i) const final { m_reference->cacheIntegral(i); }
   void cachePdf(size_t, unsigned int, const Data &, unsigned int) const final {}
+
+ 
+  void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool) const final {
+    m_reference->allDeps(res, dep, false);
+  }
+
+  void allDeps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool) const final {
+    m_reference->allDeps(res,dep, false);
+  }
+
+
 
 private:
 
