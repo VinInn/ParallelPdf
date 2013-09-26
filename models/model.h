@@ -126,7 +126,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   List<Variable> nevents;
   nevents.add(*nA); nevents.add(*nB); nevents.add(*nC); nevents.add(*nD); nevents.add(*nE);
 
-  // #define  OLDPADD
+#define  OLDPADD
 #ifdef OLDPADD
   RooAbsPdf *pdfA = new RooProdPdf<3>("pdfA","",List<AbsPdf>(*gaussA1x,*gaussA1y,*gaussA1z));
   RooAbsPdf *pdfB = new RooProdPdf<3>("pdfB","",List<AbsPdf>(*polyB1x,*argusB1y,*addBz));
@@ -136,7 +136,7 @@ RooAbsPdf *ModelEtapRGKs(RooRealVar &x, RooRealVar &y, RooRealVar &z,
   List<AbsPdf> Pdfs;
   Pdfs.add(*pdfA); Pdfs.add(*pdfB); Pdfs.add(*pdfC); Pdfs.add(*pdfD); Pdfs.add(*pdfE);
   
-  return new RooAddPdf<5>("extended","",Pdfs,nevents);
+  return new RooAddPdf<5>("extended","",Pdfs,nevents,false);
 #else
   List<AbsPdf> Pdfs;
   Pdfs.add(*gaussA1x); Pdfs.add(*gaussA1y ); Pdfs.add(*gaussA1z);

@@ -28,19 +28,22 @@ struct Add<T,2> {
 
 
 template<int N>
-class PdfAdd : public NoCacheAbsPdf {
+class PdfAdd : public AbsPdf {
 public:
-  PdfAdd(const Char_t* name, const Char_t* title, AbsPdf &pdf1, AbsPdf &pdf2, Variable &fraction) :
-    NoCacheAbsPdf(name,title,&pdf1,&pdf2,&fraction), m_isExtended(kFALSE)
+  PdfAdd(const Char_t* name, const Char_t* title, AbsPdf &pdf1, AbsPdf &pdf2, Variable &fraction, bool docache=true) :
+    AbsPdf(name,title,&pdf1,&pdf2,&fraction), m_isExtended(kFALSE)
   {
+    m_nocache=!docache;
     m_pdfs.AddElement(pdf1);
     m_pdfs.AddElement(pdf2);
     m_fractions.AddElement(fraction);
     
   }
-  PdfAdd(const Char_t* name, const Char_t* title, List<AbsPdf> pdfs, List<Variable> fractions) :
-    NoCacheAbsPdf(name,title,&pdfs,&fractions), m_isExtended(kFALSE)
+  PdfAdd(const Char_t* name, const Char_t* title, List<AbsPdf> pdfs, List<Variable> fractions, bool docache=true) :
+    AbsPdf(name,title,&pdfs,&fractions), m_isExtended(kFALSE)
   {
+    m_nocache=!docache;
+
     if (pdfs.GetSize()!=fractions.GetSize() && pdfs.GetSize()!=fractions.GetSize()-1) {
       std::cerr << GetName() << ":: Wrong number of fractions!" << std::endl;
       assert(0);
