@@ -29,12 +29,12 @@ double * PdfReferenceState::pdfVal(size_t i,  double * __restrict__ loc, unsigne
 void PdfModifiedState::cacheIntegral(size_t i) const {
   auto k = findPdf(i);
   if (k<0) m_reference->cacheIntegral(i);
-  else m_InvIntegrals[k] = m_reference->pdf(i)->integral(*this);
+  else m_InvIntegrals[k] = 1./m_reference->pdf(i)->integral(*this);
 }
 
 void PdfReferenceState::cacheIntegral(size_t i) const {
   // std::cout << "cashing integral" << i << std::endl;
-  m_InvIntegrals[i] = pdf(i)->integral(*this);
+  m_InvIntegrals[i] = 1./pdf(i)->integral(*this);
 }
 
 void PdfModifiedState::cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const {

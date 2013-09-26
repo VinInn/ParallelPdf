@@ -42,8 +42,9 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
 
 
 void refresh(PdfState & state, const Data & data, int ivar , bool all, bool docache) {
+  auto const & pdfsV = PdfReferenceState::me().pdfs();
   auto mpdf = PdfReferenceState::me().pdfs().back();
-
+  auto npdfs = PdfReferenceState::me().pdfs().size();
   std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
   if (all) state.allDeps(pdfs,dep, docache);
   else state.deps(pdfs,dep, docache);
@@ -54,9 +55,14 @@ void refresh(PdfState & state, const Data & data, int ivar , bool all, bool doca
   std::cout << std::endl;
   if (!pdfs.empty()) assert(mpdf->num()==pdfs.back());
 
-  // the order is correct...
   for (auto i: pdfs) state.cacheIntegral(i);
-  
+
+  for (auto i=0U; i<npdfs; ++i) 
+    assert( pdfsV[i]->invIntegral(state) == 1./pdfsV[i]->integral(state));
+    //std::cout << i<<':' << pdfsV[i]->invIntegral(state) << ',' << 1./pdfsV[i]->integral(state) << ' ';
+    // std::cout << std::endl;
+
+
   auto tot = data.GetEntries();
   alignas(ALIGNMENT) double lres[256];
   double * res=0;
@@ -64,10 +70,11 @@ void refresh(PdfState & state, const Data & data, int ivar , bool all, bool doca
   for (auto ie=0U; ie<tot; ie+= 256) {
     auto offset = ie;
     auto bsize = std::min(256U,tot-ie);
+    // the order is correct...
     for (auto i: pdfs) state.cachePdf(i,bsize,data,offset);
     res = state.pdfVal(mpdf->num(), lres, bsize,data,offset);
     assert(res==&lres[0]);
-    localValue = IntLogAccumulate(localValue, lres, bsize);
+    localValue = IntLogAccumulate(localValue, res, bsize);
   }
   auto ret = -0.693147182464599609375*localValue.value();
   

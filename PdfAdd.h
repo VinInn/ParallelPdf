@@ -80,13 +80,11 @@ public:
     alignas(ALIGNMENT) double lres[N][strid];
     double coeff[N];
 
-    List<Variable>::Iterator iter_fractions(m_fractions.GetIterator());
     
-    Variable *var(0);
     Double_t lastFraction = 1.;
  
     int k=0;
-    while ((var = iter_fractions.Next())!=0) {
+    for (auto var : m_fractions()) {
       lastFraction -= var->value(state);
       coeff[k++]=  var->value(state);
     }
@@ -126,14 +124,12 @@ public:
   virtual Double_t ExpectedEvents(PdfState const & state) const {
     Double_t nEvents(0);
     if (m_isExtended) {
-      Variable *var(0);
-      List<Variable>::Iterator iter_fractions(m_fractions.GetIterator());
-      while ((var = iter_fractions.Next())!=0)
+      for (auto var : m_fractions())
 	nEvents += var->value(state);
     }
     
-  return nEvents;
-}
+    return nEvents;
+  }
  
 
   

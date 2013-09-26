@@ -73,16 +73,14 @@ public:
     double coeff[N];
 
 
-    List<Variable>::Iterator iter_fractions(m_fractions.GetIterator());
-    
-    Variable *var(0);
     Double_t lastFraction = 1.;
     
     int k=0;
-    while ((var = iter_fractions.Next())!=0) {
+    for (auto var : m_fractions()) {
       lastFraction -= var->value(state);
       coeff[k++]=  var->value(state);
     }
+
     // this is extended...
     if (!m_isExtended) {
       coeff[k]=lastFraction;
@@ -90,7 +88,7 @@ public:
     } else 
       assert(N==k);
  
-    for (int l=0; l!=15; ++l) {
+    for (int l=0; l!=3*N; ++l) {
       auto pdf = m_pdfs()[l];
       pres[l] = (*pdf)(state, &(lres[l][0]), bsize, data, dataOffset);
     }
@@ -119,9 +117,7 @@ public:
   virtual Double_t ExpectedEvents(PdfState const & state) const {
     Double_t nEvents(0);
     if (m_isExtended) {
-      Variable *var(0);
-      List<Variable>::Iterator iter_fractions(m_fractions.GetIterator());
-      while ((var = iter_fractions.Next())!=0)
+      for (auto var : m_fractions())
 	nEvents += var->value(state);
     }
     
