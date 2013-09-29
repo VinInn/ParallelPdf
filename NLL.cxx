@@ -72,7 +72,7 @@ double  NLL::GetVal(PdfState& state) {
   for (auto ie=start; ie<start+size; ie+= m_nBlockEvents) {
     auto offset = ie;
     auto bsize = std::min(m_nBlockEvents,(start+size)-ie);
-    res = (*m_pdf)(state, lres, bsize, *m_data, offset);
+    res = (*m_pdf)(state, lres, bsize, offset);
     assert(res==&lres[0]);
     PartialNegReduction(localValue,res,bsize);
   }
@@ -207,8 +207,8 @@ int NLL::RunEvaluationBlockSplittingStatic(PdfState const & state, std::vector<u
   for (UInt_t ie=0; ie<ntot; ie+= m_nBlockEvents) {
     auto offset = iStart+ie;
     auto bsize = std::min(m_nBlockEvents,ntot-ie);
-    for (auto i: pdfs) state.cachePdf(i,bsize,*m_data,offset);
-    res = (*m_pdf)(state, lres, bsize, *m_data, offset);
+    for (auto i: pdfs) state.cachePdf(i,bsize, offset);
+    res = (*m_pdf)(state, lres, bsize, offset);
     assert(res==&lres[0]);
     PartialNegReduction(localValue,res,bsize);
   }
@@ -245,8 +245,8 @@ int NLL::RunEvaluationBlockSplittingDynamic(PdfState const & state, std::vector<
     for (int ie=0; ie<ln; ie+= m_nBlockEvents) {
       auto offset = ls+ie;
       auto bsize = std::min(int(m_nBlockEvents),ln-ie);
-      for (auto i: pdfs) state.cachePdf(i,bsize,*m_data,offset);
-      res = (*m_pdf)(state, lres, bsize, *m_data, offset);
+      for (auto i: pdfs) state.cachePdf(i,bsize,offset);
+      res = (*m_pdf)(state, lres, bsize, offset);
       assert(res==&lres[0]);
       PartialNegReduction(localValue,lres,bsize);
     }

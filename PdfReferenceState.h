@@ -25,16 +25,24 @@ public:
   std::vector<Variable*> & variables() { return m_Params; }
   std::vector<Variable*> const & variables() const { return m_Params; }
 
+  size_t size() const final { return m_InvIntegrals.size();}
+ 
+  // return values for the whole model...
+  double * value(double * __restrict__ loc, unsigned int bsize,  unsigned int dataOffset) const final {
+    return pdfVal(size()-1,loc, bsize ,dataOffset);
+  }
+
+
 
   // return value for Paramer i;
   double paramVal(size_t i) const final { return m_parCache[i];}
   // return integral for pdf i;
   double invIntegral(size_t i) const final { return m_InvIntegrals[i];}
   // fill res for pdf i;
-  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, unsigned int dataOffset) const final;
 
   void cacheIntegral(size_t i) const final;
-  void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  void cachePdf(size_t i, unsigned int bsize,  unsigned int dataOffset) const final;
 
   void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool doCache) const {
     refresh(res,dep,-1, doCache, false);
@@ -55,7 +63,7 @@ public:
 
   PdfReferenceState() : m_indexDep(1,0), m_indexPdf(1,0), initialized(false){}
 
-  void init(int size);
+  void init(const Data & idata);
 
   static PdfReferenceState & me();
   static void registerPdf(AbsPdf * pdf, std::initializer_list<Named *> pdfOrVar);
@@ -101,7 +109,17 @@ public:
     m_reference(ref),  m_param(ipar), m_value(v){
     ref->depsI(m_pdfs,m_deps,ipar,false);
     m_InvIntegrals.resize(m_pdfs.size());
+    m_data = &ref->data();
   }
+
+
+  size_t size() const final { return m_InvIntegrals.size();}
+
+  // return values for the whole model...
+  double * value(double * __restrict__ loc, unsigned int bsize, unsigned int dataOffset) const final {
+    return pdfVal(m_reference->size()-1,loc, bsize, dataOffset);
+  }
+
 
 
   // return value for Paramer i;
@@ -109,10 +127,10 @@ public:
   // return integral for pdf i;
   double invIntegral(size_t i) const final { auto k = findPdf(i); return k>=0 ? m_InvIntegrals[k] : m_reference->invIntegral(i); }
   // fill res for pdf i;
-  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize,  unsigned int dataOffset) const final;
 
   void cacheIntegral(size_t i) const final;
-  void cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  void cachePdf(size_t i, unsigned int bsize,  unsigned int dataOffset) const final;
 
 
   void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool) const final {
@@ -150,18 +168,24 @@ class PdfNoCacheState  : public PdfState {
 public:
 
   explicit PdfNoCacheState(PdfReferenceState const * ref) :
-  m_reference(ref),m_InvIntegrals(ref->pdfs().size()){}
+  m_reference(ref),m_InvIntegrals(ref->pdfs().size()){m_data = &ref->data();}
 
+  size_t size() const final { return m_InvIntegrals.size();}
+
+  // return values for the whole model...
+  double * value(double * __restrict__ loc, unsigned int bsize,  unsigned int dataOffset) const final {
+    return pdfVal(m_reference->size()-1,loc, bsize,dataOffset);
+  }
 
   // return value for Paramer i;
   double paramVal(size_t i) const final;
   // return integral for pdf i;
   double invIntegral(size_t i) const final { return m_InvIntegrals[i]; }
   // fill res for pdf i;
-  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const final;
+  double * pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize,  unsigned int dataOffset) const final;
 
   void cacheIntegral(size_t i) const final;
-  void cachePdf(size_t, unsigned int, const Data &, unsigned int) const final {}
+  void cachePdf(size_t, unsigned int,  unsigned int) const final {}
 
  
   void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool) const final {

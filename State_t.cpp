@@ -41,7 +41,7 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
 }
 
 
-void refresh(PdfState & state, const Data & data, int ivar , bool all, bool docache) {
+void refresh(PdfState & state,  int ivar , bool all, bool docache) {
   auto const & pdfsV = PdfReferenceState::me().pdfs();
   auto mpdf = PdfReferenceState::me().pdfs().back();
   auto npdfs = PdfReferenceState::me().pdfs().size();
@@ -57,13 +57,13 @@ void refresh(PdfState & state, const Data & data, int ivar , bool all, bool doca
 
   for (auto i: pdfs) state.cacheIntegral(i);
 
-  for (auto i=0U; i<npdfs; ++i) 
+  for (auto i=0U; i<npdfs; ++i)
     assert( pdfsV[i]->invIntegral(state) == 1./pdfsV[i]->integral(state));
-    //std::cout << i<<':' << pdfsV[i]->invIntegral(state) << ',' << 1./pdfsV[i]->integral(state) << ' ';
-    // std::cout << std::endl;
+  // std::cout << i<<':' << pdfsV[i]->invIntegral(state) << ',' << 1./pdfsV[i]->integral(state) << ' ';
+  // std::cout << std::endl;
 
 
-  auto tot = data.GetEntries();
+  auto tot = state.data().GetEntries();
   alignas(ALIGNMENT) double lres[256];
   double * res=0;
   TMath::IntLog localValue;
@@ -71,8 +71,8 @@ void refresh(PdfState & state, const Data & data, int ivar , bool all, bool doca
     auto offset = ie;
     auto bsize = std::min(256U,tot-ie);
     // the order is correct...
-    for (auto i: pdfs) state.cachePdf(i,bsize,data,offset);
-    res = state.pdfVal(mpdf->num(), lres, bsize,data,offset);
+    for (auto i: pdfs) state.cachePdf(i,bsize,offset);
+    res = state.value(lres, bsize,offset);
     assert(res==&lres[0]);
     localValue = IntLogAccumulate(localValue, res, bsize);
   }
@@ -104,20 +104,20 @@ int main() {
   
   PdfReferenceState & refState = PdfReferenceState::me();
 
-  refState.init(data.GetEntries());
+  refState.init(data);
   
   refState.print();
 
 
   PdfNoCacheState ncState(&refState);
 
-  refresh(ncState, data, -1,true,false);
+  refresh(ncState, -1,true,false);
   std::cout << std::endl;
 
 
-  refresh(refState, data, -1,true,true);
+  refresh(refState, -1,true,true);
   std::cout << std::endl;
-  refresh(refState, data,-1,false,true);
+  refresh(refState,-1,false,true);
   std::cout << std::endl;
   std::cout << std::endl;
 
@@ -133,16 +133,16 @@ int main() {
       vars[i]->SetVal(v+e);
       std::cout << "var " << i << ":   ";
       if (ak>1) 
-	refresh(ncState, data, -1,true,false);
+	refresh(ncState, -1,true,false);
       else
-	refresh(refState, data,-1,false, true);
+	refresh(refState,-1,false, true);
       if (ak%2==1) vars[i]->SetVal(v-e);
     }
     std::cout << std::endl;
   }
-  refresh(refState,data,-1,false, true);
+  refresh(refState,-1,false, true);
   std::cout << std::endl;
-  refresh(refState,data,-1,false,true);
+  refresh(refState,-1,false,true);
   std::cout << std::endl;
   std::cout << std::endl;
 
@@ -153,11 +153,11 @@ int main() {
     auto e = vars[i]->GetError();
     PdfModifiedState mstate(&refState,i, v+e);
     std::cout << "var " << i << ":   ";
-    refresh(mstate, data,i,false,false);
+    refresh(mstate, i,false,false);
   }
-  refresh(refState, data,-1,false,true);
+  refresh(refState,-1,false,true);
   std::cout << std::endl;
-  refresh(refState, data, -1,true,true);
+  refresh(refState,-1,true,true);
   std::cout << std::endl;
   std::cout << std::endl;
 

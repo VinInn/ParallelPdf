@@ -100,7 +100,7 @@ public:
  
     for (int l=0; l!=N; ++l) {
       auto pdf = m_pdfs()[l];
-      pres[l] = (*pdf)(state, &(lres[l][0]), bsize, data, dataOffset);
+      pres[l] = (*pdf)(state, &(lres[l][0]), bsize, dataOffset);
     }
   
     

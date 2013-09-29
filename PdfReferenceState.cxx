@@ -10,19 +10,19 @@
 double PdfNoCacheState::paramVal(size_t i) const { return  m_reference->variables()[i]->GetVal();}
 
 
-double * PdfNoCacheState::pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
-  m_reference->pdf(i)->values(*this,loc,bsize,data,dataOffset); return loc;
+double * PdfNoCacheState::pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize,  unsigned int dataOffset) const {
+  m_reference->pdf(i)->values(*this,loc,bsize,data(),dataOffset); return loc;
 }
 
-double * PdfModifiedState::pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+double * PdfModifiedState::pdfVal(size_t i, double * __restrict__ loc, unsigned int bsize, unsigned int dataOffset) const {
   auto k = findPdf(i);
-  if (k<0) return m_reference->pdfVal(i,loc,bsize,data,dataOffset);
-  else { m_reference->pdf(i)->values(*this,loc,bsize,data,dataOffset); return loc;}
+  if (k<0) return m_reference->pdfVal(i,loc,bsize,dataOffset);
+  else { m_reference->pdf(i)->values(*this,loc,bsize,data(),dataOffset); return loc;}
 }
 
-double * PdfReferenceState::pdfVal(size_t i,  double * __restrict__ loc, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+double * PdfReferenceState::pdfVal(size_t i,  double * __restrict__ loc, unsigned int bsize,  unsigned int dataOffset) const {
   auto k = m_indexCache[i];
-  if (k<0) { /* std::cout << "eval " << i << std::endl; */ pdf(i)->values(*this,loc,bsize,data,dataOffset); return loc; }
+  if (k<0) { /* std::cout << "eval " << i << std::endl; */ pdf(i)->values(*this,loc,bsize,data(),dataOffset); return loc; }
   else {  /* std::cout << "from chache " << i << std::endl; */ return m_resCache.GetData(k,dataOffset); }
 }
 
@@ -43,17 +43,17 @@ void PdfNoCacheState::cacheIntegral(size_t i) const {
 }
 
 
-void PdfModifiedState::cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+void PdfModifiedState::cachePdf(size_t i, unsigned int bsize,  unsigned int dataOffset) const {
   auto k = findPdf(i);
-  if (k<0) m_reference->cachePdf(i,bsize,data,dataOffset);
+  if (k<0) m_reference->cachePdf(i,bsize,dataOffset);
 }
 
-void PdfReferenceState::cachePdf(size_t i, unsigned int bsize, const Data & data, unsigned int dataOffset) const {
+void PdfReferenceState::cachePdf(size_t i, unsigned int bsize, unsigned int dataOffset) const {
   auto k = m_indexCache[i];
   if (k<0) return;
   // std::cout << "cashing" << i << std::endl;
   auto res = m_resCache.GetData(k,dataOffset);
-  pdf(i)->values(*this,res,bsize,data,dataOffset);
+  pdf(i)->values(*this,res,bsize,data(),dataOffset);
 }
 
 
@@ -223,9 +223,11 @@ namespace {
   }
 }
 
-void PdfReferenceState::init(int size) {
+void PdfReferenceState::init(const Data & idata) {
   assert(!initialized);
   initialized=true;
+
+  m_data = &idata;
 
   // invert dependency vectors....
   invert(m_pdfs.size(),m_indexDep, m_Dep);
@@ -243,7 +245,7 @@ void PdfReferenceState::init(int size) {
     ++i;
   }
 
-  m_resCache = std::move(Data("","",size,k));
+  m_resCache = std::move(Data("","",m_data->GetEntries(),k));
 
   for (auto i = 0U; i!=m_Params.size(); ++i)
     m_parCache[i]=m_Params[i]->GetVal();
