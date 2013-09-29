@@ -105,6 +105,7 @@ class PdfModifiedState  : public PdfState {
 
 public:
 
+  PdfModifiedState(){}
   PdfModifiedState(PdfReferenceState const * ref, unsigned int ipar, double v) :
     m_reference(ref),  m_param(ipar), m_value(v){
     ref->depsI(m_pdfs,m_deps,ipar,false);
@@ -148,7 +149,7 @@ private:
     return (k==int(m_pdfs.size())) ? -1 : k;
   }
 
-  PdfReferenceState const * m_reference;
+  PdfReferenceState const * m_reference=nullptr;
 
   std::vector<unsigned short> m_pdfs;
   std::vector<unsigned short> m_deps;
