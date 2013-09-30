@@ -13,6 +13,22 @@
 
 #include "CircularBuffer.h"
 
+
+#include <thread>
+#include <mutex>
+typedef std::mutex Mutex;
+// typedef std::lock_guard<std::mutex> Lock;
+typedef std::unique_lock<std::mutex> Lock;
+typedef std::unique_lock<std::mutex> Guard;
+//typedef std::condition_variable Condition;
+
+
+namespace global {
+  // control cout....
+  Mutex coutLock;
+}
+
+
 class PdfScheduler;
 
 // can be either integral on chunk, final reduction 
@@ -75,10 +91,10 @@ public:
   
   size_t nBlockEvents() const { return m_nBlockEvents;}
 
-  void pushTasks(CircularBuffer<Task> & buff);
+  void pushTasks(CircularBuffer<Task> & buff) noexcept;
   
   void integralDone(size_t i) { }
-  void chunkResult(size_t i, TMath::IntLog value);
+  void chunkResult(size_t i, TMath::IntLog value){}
 
 private:
   CircularBuffer<Task> & tasks;
@@ -180,9 +196,7 @@ void compute(PdfReferenceState & refState, size_t nevals, PdfModifiedState const
 
 
 
-void differentiate(PdfReferenceState & refState, std::vector<unsigned short> const & vars, std::vector<double> const & steps, std::vector<double> &  res) {
-  assert(2*vars.size()==steps.size());
-  auto nvar = vars.size();
+void differentiate(PdfReferenceState & refState, unsigned int nvar, int const * vars, double const * steps, double *  res) {
   auto nevals = 2*nvar;
   
   PdfModifiedState mstate[nevals];
@@ -202,7 +216,7 @@ void differentiate(PdfReferenceState & refState, std::vector<unsigned short> con
 
 
 // inside a single thred...
-void PdfScheduler::pushTasks(CircularBuffer<Task> & buff) {
+void PdfScheduler::pushTasks(CircularBuffer<Task> & buff) noexcept {
   
   // auto allN = omp_get_num_threads();
   // auto meN = omp_get_thread_num();
@@ -213,7 +227,8 @@ void PdfScheduler::pushTasks(CircularBuffer<Task> & buff) {
     for (;istate<nevals; ++istate) {
       auto Npdfs = mstates[istate].size();
       for (;idoing<Npdfs; ++idoing) {
-	if (buff.push(Task(this,Task::integral,mstates[istate],istate, idoing),false)) break;
+	//	{ Guard g(global::coutLock); std::cout << "pushing "<< omp_get_thread_num() << " : integral " << idoing << " " << buff.size() << std::endl; }
+	if (!buff.push(Task(this,Task::integral,mstates[istate],istate, idoing),false)) break;
       }
       if (idoing==Npdfs) idoing=0;
       else break;
@@ -232,6 +247,8 @@ void PdfScheduler::pushTasks(CircularBuffer<Task> & buff) {
     }
     else break;
   case Task::reduction:
+    //    { Guard g(global::coutLock);  std::cout << "pushing "<< omp_get_thread_num() << " : " << "reduction" << " " << buff.size() << std::endl; }
+    buff.drain();
     break;
     
   }

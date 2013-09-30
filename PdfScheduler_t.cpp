@@ -36,6 +36,50 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
   return model;
 }
 
+void refresh(PdfState & state,  int ivar , bool all, bool docache) {
+  auto const & pdfsV = PdfReferenceState::me().pdfs();
+  auto mpdf = PdfReferenceState::me().pdfs().back();
+  auto npdfs = PdfReferenceState::me().pdfs().size();
+  std::vector<unsigned short> pdfs; std::vector<unsigned short>  dep;
+  if (all) state.allDeps(pdfs,dep, docache);
+  else state.deps(pdfs,dep, docache);
+
+  assert(pdfs.size()==dep.size());
+  for (auto i=0U; i<pdfs.size(); ++i)
+    std::cout << pdfs[i] <<"," << dep[i] <<" ";
+  std::cout << std::endl;
+  if (!pdfs.empty()) assert(mpdf->num()==pdfs.back());
+
+  for (auto i: pdfs) state.cacheIntegral(i);
+
+  for (auto i=0U; i<npdfs; ++i)
+    assert( pdfsV[i]->invIntegral(state) == 1./pdfsV[i]->integral(state));
+  // std::cout << i<<':' << pdfsV[i]->invIntegral(state) << ',' << 1./pdfsV[i]->integral(state) << ' ';
+  // std::cout << std::endl;
+
+
+  auto tot = state.data().GetEntries();
+  alignas(ALIGNMENT) double lres[256];
+  double * res=0;
+  TMath::IntLog localValue;
+  for (auto ie=0U; ie<tot; ie+= 256) {
+    auto offset = ie;
+    auto bsize = std::min(256U,tot-ie);
+    // the order is correct...
+    for (auto i: pdfs) state.cachePdf(i,bsize,offset);
+    res = state.value(lres, bsize,offset);
+    assert(res==&lres[0]);
+    localValue = IntLogAccumulate(localValue, res, bsize);
+  }
+  auto ret = -0.693147182464599609375*localValue.value();
+  
+  ret += mpdf->ExtendedTerm(state,tot);
+
+  std::cout << "result " << ret << std::endl;
+
+}
+
+
 
 int main() {
 
@@ -59,6 +103,26 @@ int main() {
   refState.init(data);
   
   refState.print();
+
+  auto pdfPars = PdfReferenceState::me().variables();
+  // first count 
+  int nvar=0;
+  for ( auto p :  pdfPars ) if (!p->IsConstant() && !p->isData()) ++nvar;
+    
+  int vars[nvar];
+  int k=0; int ip=0;
+  for ( auto p :  pdfPars ) { if (!p->IsConstant() && !p->isData()) vars[k++]= ip; ++ip;}
+  assert(k==nvar);
+ 
+
+  // evaluate and cache
+  refresh(refState, -1,true,true);
+  std::cout << std::endl;
+
+  double steps[2*nvar] = {0.,};
+  double deriv[nvar];
+  differentiate(refState,nvar,vars,steps,deriv);
+  
 
 
   delete model; // sic
