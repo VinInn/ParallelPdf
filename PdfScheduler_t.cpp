@@ -1,6 +1,6 @@
-
+#define  DOPRINT
 #include "PdfScheduler.h"
-
+#undef DOPRINT
 
 #include "PdfReferenceState.h"
 

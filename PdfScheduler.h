@@ -29,96 +29,62 @@ namespace global {
 }
 
 
-class PdfScheduler;
-
-// can be either integral on chunk, final reduction 
-class Task {
-public:
-  enum What { integral, chunk, reduction};
-  
-  Task(){}
-  Task(PdfScheduler * is, What iw, PdfModifiedState const & ms, unsigned int sid, unsigned int st, unsigned int en=0) :
-    what(iw), ls(st), ln(en), stateId(sid), m_state(&ms),  m_scheduler(is){}
-  
-  void evaluate() const {
-    assert(done==false);
-    done=true;
-    switch (what) {
-    case integral:
-      doIntegral();
-      break;
-    case chunk:
-      computeChunk();
-      break;
-    case reduction:
-      reduce();
-    }
-    
-  }
-  
-  
-  What what;
-  
-  // for integral ls is pdf
-  // chunk ls, ln are start and end event
-  unsigned int ls, ln;
-
-  unsigned int stateId;
-  PdfModifiedState const * m_state=nullptr;
-  mutable PdfScheduler * m_scheduler=nullptr;
-
-  mutable bool done=false;
-  
-  PdfState const & state() const { return *m_state;}
-  PdfScheduler & scheduler() const { return *m_scheduler; }
-  
-  void doIntegral() const;
-  void computeChunk()  const;
-  
-  
-  void reduce() const {} 
-};
-
-
 
 
 class PdfScheduler {
   
 public:
-  PdfScheduler(size_t inevals, PdfModifiedState const * imstates, double * ires, size_t bsize, CircularBuffer<Task> & itasks) :
-    tasks(itasks),
-    m_nBlockEvents(bsize), nevals(inevals), mstates(imstates), res(ires),
-    integDone(nevals/2), stateReady(nevals/2) {
-    for ( auto k=0U; k!=integDone.size(); ++k) integDone[k]=mstates[k].size();
+
+  enum What { integral, chunk, reduction};
+ 
+
+  PdfScheduler(size_t inevals, PdfModifiedState const * imstates, double * ires, size_t bsize) :
+    m_nBlockEvents(bsize), nevals(inevals), mstates(imstates), res(ires), istate(0),
+    integToDo(nevals/2), integDone(nevals/2), stateReady(nevals/2) {
+    for ( auto k=0U; k!=integDone.size(); ++k)  { integToDo[k]=integDone[k]=mstates[k].size(); }
   }
   
+
+  ~PdfScheduler();
+
   size_t nBlockEvents() const { return m_nBlockEvents;}
 
-  void pushTasks(CircularBuffer<Task> & buff) noexcept;
+  void doTasks() noexcept;
   
-  void integralDone(size_t i) {  
-    --integDone[i]; 
-  }
+
   void chunkResult(size_t i, TMath::IntLog value){}
 
 private:
-  CircularBuffer<Task> & tasks;
   
   size_t m_nBlockEvents;
   
-  Task::What todo=Task::integral;
+  What todo=integral;
   
   size_t nevals;
   PdfModifiedState const * mstates;
   double * res;
   
-  size_t istate=0;
-  size_t idoing=0;
+  std::atomic<int> istate;
   
+  std::vector<std::atomic<int> > integToDo;
   std::vector<std::atomic<int> > integDone;
   std::vector<std::atomic<int> > stateReady;
+
   
 };
+
+
+PdfScheduler::~PdfScheduler() {
+#ifdef DOPRINT
+
+  for ( auto k=0U; k!=integDone.size(); ++k)
+    std::cout << k << ':' << integToDo[k] <<','<< integDone[k] << ' ';
+  std::cout << std::endl;
+
+
+#endif
+}
+
 
 /*
 // check depedency, if 0 schedule pdf...
@@ -134,12 +100,8 @@ while (k>0 && !std::atomic_compare_exchange_weak(&dep[i],&k,k-1));
 */
 
 
-void Task::doIntegral() const {
-  state().cacheIntegral(ls);
-  scheduler().integralDone(stateId);    
-}
-
-void Task::computeChunk() const {
+/*
+void computeChunk() const {
   unsigned int block =  scheduler().nBlockEvents();
   alignas(ALIGNMENT) double lres[block];
     double * res=0;
@@ -153,48 +115,24 @@ void Task::computeChunk() const {
     }
     scheduler().chunkResult(stateId,localValue);
 }
-
+*/
 
 
 void compute(PdfReferenceState & refState, size_t nevals, PdfModifiedState const * mstates, double * res) {
   
   
-  auto busize = std::min(size_t(4*omp_get_max_threads()),nevals);
-  CircularBuffer<Task> tasks(busize);
+  PdfScheduler scheduler(nevals, mstates, res, 512);
   
-  PdfScheduler scheduler(nevals, mstates, res, 512, tasks );
-  
-  int pushing[omp_get_max_threads()]={0,};
   
   
 #pragma omp parallel
   {
     try {
-      auto me = omp_get_thread_num();
-      Task curr;
-      while (true) {
-	// first try to push
-	if ( (!tasks.draining()) && tasks.halfEmpty() && tasks.tryLock()) {
-	  scheduler.pushTasks(tasks);
-	  tasks.releaseLock();
-	  ++pushing[me];
-	}
-	int k=busize/4+1;
-	while( (tasks.draining() || (--k))  && tasks.pop(curr, false)) {
-	  curr.evaluate();
-	}
-	if (tasks.draining()) break;
-      }
-      // needed???
-      while( tasks.pop(curr)) {
-	curr.evaluate();
-      }
+      scheduler.doTasks();
+      
     } catch(...) {}
   }    
   
-  std::cout << "pushers: ";
-  for (int i=0; i<omp_get_max_threads(); ++i) std::cout << pushing[i] << ", ";
-  std::cout << std::endl;std::cout << std::endl;
   
   
 }
@@ -223,42 +161,37 @@ void differentiate(PdfReferenceState & refState, unsigned int nvar, int const * 
 
 
 // inside a single thred...
-void PdfScheduler::pushTasks(CircularBuffer<Task> & buff) noexcept {
+void PdfScheduler::doTasks() noexcept {
   
   // auto allN = omp_get_num_threads();
   // auto meN = omp_get_thread_num();
-  
+ 
+  int ls = istate;
   switch (todo) {
-  case Task::integral:
+   case integral:
     // integrals
-    for (;istate<nevals; ++istate) {
-      auto Npdfs = mstates[istate].size();
-      for (;idoing<Npdfs; ++idoing) {
-	//	{ Guard g(global::coutLock); std::cout << "pushing "<< omp_get_thread_num() << " : integral " << idoing << " " << buff.size() << std::endl; }
-	if (!buff.push(Task(this,Task::integral,mstates[istate],istate, idoing),false)) break;
+    while(true) {
+      if (ls==int(nevals)) break;
+      auto & aw = integToDo[ls]; 
+      while(true) {
+	int is =  aw;
+	while (is>0 && !std::atomic_compare_exchange_weak(&aw,&is,is-1));
+	if (is<=0) break;
+	mstates[ls].cacheIntegral(is-1);
+	--integDone[ls];
       }
-      if (idoing==Npdfs) idoing=0;
-      else break;
+      ls = istate;
+      while (ls<int(nevals) && !std::atomic_compare_exchange_weak(&istate,&ls,ls+1));
+      if (ls==int(nevals)) break;
     }
-    if (istate==nevals) { 
-      istate=0;
-      todo=Task::chunk;
+    todo=chunk;
+  case chunk:
+    if (istate==int(nevals)) { 
+      todo=reduction;
     }
-    else break;
-  case Task::chunk:
-    
-    for (;istate<nevals; ++istate) {
-    }
-    if (istate==nevals) { 
-      istate=0;
-      todo=Task::reduction;
-    }
-    else break;
-  case Task::reduction:
+  case reduction:
     //    { Guard g(global::coutLock);  std::cout << "pushing "<< omp_get_thread_num() << " : " << "reduction" << " " << buff.size() << std::endl; }
-    buff.drain();
-    break;
-    
+    break; 
   }
 }
 
