@@ -6,6 +6,7 @@
 #include "Variable.h"
 #include "List.h"
 
+#include <thread>
 #include<atomic>
 
 
@@ -39,11 +40,14 @@ public:
  
 
   PdfScheduler(size_t inevals, PdfModifiedState const * imstates, double * ires, size_t bsize) :
-    m_nBlockEvents(bsize), nevals(inevals), mstates(imstates), res(ires), istate(0),
-    integToDo(nevals/2), integDone(nevals/2), stateReady(nevals/2) {
+    m_nBlockEvents(bsize), nevals(inevals), mstates(imstates), res(ires),
+    istate(0), integToDo(inevals), integDone(inevals), 
+    nPdfToEval(0), pdfToEval(inevals,-1),stateReady(inevals) {
     for ( auto k=0U; k!=integDone.size(); ++k)  { integToDo[k]=integDone[k]=mstates[k].size(); }
+    setChunks();
   }
   
+  void setChunks();
 
   ~PdfScheduler();
 
@@ -51,8 +55,9 @@ public:
 
   void doTasks() noexcept;
   
+  void computeChunk(unsigned  ist, unsigned  icu) const;
 
-  void chunkResult(size_t i, TMath::IntLog value){}
+  void chunkResult(size_t i, TMath::IntLog value) const{}
 
 private:
   
@@ -68,6 +73,17 @@ private:
   
   std::vector<std::atomic<int> > integToDo;
   std::vector<std::atomic<int> > integDone;
+
+  std::atomic<unsigned int> nPdfToEval;
+  std::vector<int> pdfToEval;
+
+  std::vector<std::atomic<int> > nChunks;
+  std::vector<int> iChunks;
+
+  std::vector<std::atomic<int> >  pdfToDo;
+  std::vector<std::atomic<int> >  pdfDone;
+
+
   std::vector<std::atomic<int> > stateReady;
 
   
@@ -79,6 +95,18 @@ PdfScheduler::~PdfScheduler() {
 
   for ( auto k=0U; k!=integDone.size(); ++k)
     std::cout << k << ':' << integToDo[k] <<','<< integDone[k] << ' ';
+  std::cout << std::endl;
+
+  std::cout << nPdfToEval << " ";
+  for ( auto k=0U; k!=pdfToEval.size(); ++k)
+    std::cout << k << ':' << pdfToEval[k]<< ' ';;
+  std::cout << std::endl;
+
+  auto npar = Data::inPart();
+  std::cout << "partions " << npar << ": ";
+  for (auto i=0U; i<npar; ++i) std::cout << nChunks[i] <<','<< iChunks[i] <<' ';
+  std::cout << "\n tot chunks " << iChunks.back() << ": ";
+  for (auto i=0; i<iChunks.back(); ++i) std::cout << pdfToDo[i] <<','<< pdfDone[i] <<' ';
   std::cout << std::endl;
 
 
@@ -100,22 +128,35 @@ while (k>0 && !std::atomic_compare_exchange_weak(&dep[i],&k,k-1));
 */
 
 
-/*
-void computeChunk() const {
-  unsigned int block =  scheduler().nBlockEvents();
+
+void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) const {
+
+  // { Guard g(global::coutLock);  std::cout << nPdfToEval << " chunk "<< omp_get_thread_num() << " : " <<  ist << " " << icu << std::endl; }
+
+  // stupid spinlock waiting for integrals...
+  while (ist>=nPdfToEval) std::this_thread::yield();
+  auto k = pdfToEval[ist];
+
+  auto block =  nBlockEvents();
+  auto chunk = 4*block;  // we know
+  auto const & data = mstates[k].data();
+
+  auto ls = data.startP()+icu*chunk;
+  auto ln = std::min(data.sizeP()-icu*chunk,chunk);
+
   alignas(ALIGNMENT) double lres[block];
     double * res=0;
     TMath::IntLog localValue;
     for (auto ie=0U; ie<ln; ie+= block) {
       auto offset = ls+ie;
       auto bsize = std::min(block,ln-ie);
-      res = state().value(lres, bsize,offset);
+      res = mstates[k].value(lres, bsize,offset);
       assert(res==&lres[0]);
       localValue = IntLogAccumulate(localValue, res, bsize);
     }
-    scheduler().chunkResult(stateId,localValue);
+    chunkResult(ist,localValue);
 }
-*/
+
 
 
 void compute(PdfReferenceState & refState, size_t nevals, PdfModifiedState const * mstates, double * res) {
@@ -160,13 +201,59 @@ void differentiate(PdfReferenceState & refState, unsigned int nvar, int const * 
 }
 
 
+
+void PdfScheduler::setChunks() {
+  
+  // auto allN = omp_get_num_threads();
+  // auto meN = omp_get_thread_num();
+
+  auto const & data = mstates[0].data();
+
+  auto npar = Data::inPart();
+  // auto ntot = data.size();
+
+  auto chunk = 4*m_nBlockEvents;
+
+  nChunks=std::vector<std::atomic<int> >(npar);
+  iChunks.resize(npar+1,0);
+  for (auto i=0U; i<npar; ++i) {
+    nChunks[i] = data.sizeP(i)/chunk;
+    if (0!= data.sizeP(i)%chunk) ++nChunks[i];
+    iChunks[i+1] = iChunks[i]+nChunks[i];
+  }
+  pdfToDo=std::vector<std::atomic<int> >(iChunks.back());
+  pdfDone=std::vector<std::atomic<int> >(iChunks.back());
+  for( auto & a : pdfToDo) { a=0;}
+  for( auto & a : pdfDone) { a=nevals;}
+
+
+#ifdef DOPRINT
+  std::cout << "partions " << npar << ": ";
+  for (auto i=0U; i<npar; ++i) std::cout << nChunks[i] <<','<< iChunks[i] <<' ';
+  std::cout << "\n tot chunks " << iChunks.back() << ": ";
+  for (auto i=0; i<iChunks.back(); ++i) std::cout << pdfToDo[i] <<','<< pdfDone[i] <<' ';
+  std::cout << std::endl;
+
+#endif
+
+}
+
 // inside a single thred...
 void PdfScheduler::doTasks() noexcept {
   
   // auto allN = omp_get_num_threads();
-  // auto meN = omp_get_thread_num();
- 
+  
+  //auto const meT = omp_get_thread_num();
+
+  auto const meG = Data::partition();
+
+
+
   int ls = istate;
+  
+  int lc = nChunks[meG];
+  int start=iChunks[meG];
+
   switch (todo) {
    case integral:
     // integrals
@@ -178,17 +265,44 @@ void PdfScheduler::doTasks() noexcept {
 	while (is>0 && !std::atomic_compare_exchange_weak(&aw,&is,is-1));
 	if (is<=0) break;
 	mstates[ls].cacheIntegral(is-1);
-	--integDone[ls];
+
+	// pseudo queue
+	is = integDone[ls];
+	assert(is>0);
+	while (!std::atomic_compare_exchange_weak(&integDone[ls],&is,is-1));
+	assert(is>0);
+	if (1==is) {
+	  //push ls
+	  unsigned int k = nPdfToEval;
+	  while (!std::atomic_compare_exchange_weak(&nPdfToEval,&k,k+1));
+	  assert(k<nevals);
+	  pdfToEval[k]=ls;
+	} 
       }
       ls = istate;
       while (ls<int(nevals) && !std::atomic_compare_exchange_weak(&istate,&ls,ls+1));
       if (ls==int(nevals)) break;
     }
     todo=chunk;
+    // break;
   case chunk:
-    if (istate==int(nevals)) { 
-      todo=reduction;
+    while(true) {
+      if (lc<=0) break;
+      auto k = start+lc-1;
+      auto & aw = pdfToDo[k]; 
+      while(true) {
+	int ip =  aw;
+	while (ip<int(nevals) && !std::atomic_compare_exchange_weak(&aw,&ip,ip+1));
+	if (ip==int(nevals)) break;
+	computeChunk(ip,lc-1);
+	--pdfDone[lc-1];
+      }
+      lc = nChunks[meG];
+      while (lc>0 && !std::atomic_compare_exchange_weak(&nChunks[meG],&lc,lc-1));
+      if (lc<=0) break;
     }
+    todo=reduction;
+    
   case reduction:
     //    { Guard g(global::coutLock);  std::cout << "pushing "<< omp_get_thread_num() << " : " << "reduction" << " " << buff.size() << std::endl; }
     break; 

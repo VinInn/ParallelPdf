@@ -79,6 +79,11 @@ class Data final : public Named {
   }
 
 
+  size_t sizeP(int i) const {
+    return m_size[i];
+  }
+
+
   // find in which partition is this event
   size_t partition(unsigned int nev) const {
     for ( auto i=inPart(); i!=0; --i)
