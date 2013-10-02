@@ -119,10 +119,23 @@ int main() {
   refresh(refState, -1,true,true);
   std::cout << std::endl;
 
-  double steps[2*nvar] = {0.,};
+  double steps[2*nvar];
+
+  k=0;
+  for (auto i : vars) {
+    auto e = pdfPars[i]->GetError();
+    steps[k++]=e;
+    steps[k++]=-e;
+  }
+  assert(k==2*nvar);
+
+
   double deriv[nvar];
   differentiate(refState,nvar,vars,steps,deriv);
-  
+
+  for ( auto d : deriv) 
+    std::cout << d << ' ';
+  std::cout << std::endl;
 
 
   delete model; // sic

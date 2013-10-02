@@ -39,8 +39,8 @@ public:
   enum What { integral, chunk, reduction};
  
 
-  PdfScheduler(size_t inevals, PdfModifiedState const * imstates, double * ires, size_t bsize) :
-    m_nBlockEvents(bsize), nevals(inevals), mstates(imstates), res(ires),
+  PdfScheduler(size_t inevals, PdfModifiedState const * imstates, TMath::IntLog * ivalues, size_t bsize) :
+    m_nBlockEvents(bsize), nevals(inevals), mstates(imstates), values(ivalues),
     istate(0), integToDo(inevals), integDone(inevals), 
     nPdfToEval(0), pdfToEval(inevals,-1),stateReady(inevals) {
     for ( auto k=0U; k!=integDone.size(); ++k)  { integToDo[k]=integDone[k]=mstates[k].size(); }
@@ -55,9 +55,13 @@ public:
 
   void doTasks() noexcept;
   
-  void computeChunk(unsigned  ist, unsigned  icu) const;
+  void computeChunk(unsigned  ist, unsigned  icu) ;
 
-  void chunkResult(size_t i, TMath::IntLog value) const{}
+  void chunkResult(size_t i, TMath::IntLog value) {
+    Guard g(global::coutLock); // FIXME
+    values[i].reduce(value);
+
+  }
 
 private:
   
@@ -67,11 +71,10 @@ private:
   
   size_t nevals;
   PdfModifiedState const * mstates;
-  double * res;
-  
+  TMath::IntLog * values;
+
   std::atomic<int> istate;
-  
-  std::vector<std::atomic<int> > integToDo;
+    std::vector<std::atomic<int> > integToDo;
   std::vector<std::atomic<int> > integDone;
 
   std::atomic<unsigned int> nPdfToEval;
@@ -85,7 +88,6 @@ private:
 
 
   std::vector<std::atomic<int> > stateReady;
-
   
 };
 
@@ -129,7 +131,7 @@ while (k>0 && !std::atomic_compare_exchange_weak(&dep[i],&k,k-1));
 
 
 
-void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) const {
+void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) {
 
   // { Guard g(global::coutLock);  std::cout << nPdfToEval << " chunk "<< omp_get_thread_num() << " : " <<  ist << " " << icu << std::endl; }
 
@@ -154,7 +156,7 @@ void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) const {
       assert(res==&lres[0]);
       localValue = IntLogAccumulate(localValue, res, bsize);
     }
-    chunkResult(ist,localValue);
+    chunkResult(k,localValue);
 }
 
 
@@ -162,7 +164,9 @@ void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) const {
 void compute(PdfReferenceState & refState, size_t nevals, PdfModifiedState const * mstates, double * res) {
   
   
-  PdfScheduler scheduler(nevals, mstates, res, 512);
+  TMath::IntLog  values[nevals];
+
+  PdfScheduler scheduler(nevals, mstates, values, 512);
   
   
   
@@ -174,7 +178,14 @@ void compute(PdfReferenceState & refState, size_t nevals, PdfModifiedState const
     } catch(...) {}
   }    
   
-  
+  auto m_pdf = refState.pdfs().back();
+  auto ntot = refState.data().size();
+
+  for (auto k=0U; k<nevals; ++k) {
+    res[k] = -0.693147182464599609375*values[k].value();
+    if (m_pdf->IsExtended())
+      res[k] += m_pdf->ExtendedTerm(mstates[k],ntot);
+  }
   
 }
 

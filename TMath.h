@@ -241,6 +241,7 @@ namespace TMath {
     int iexp=0;
     double mantissa=0;
     double value() const { return iexp+std::log2(mantissa); }
+    IntLog & reduce(IntLog const & rh) {  iexp+=rh.iexp; mantissa*=rh.mantissa; return *this;}
   };
 
 inline  IntLog IntLogAccumulate(IntLog start, double const * value, int nval) {

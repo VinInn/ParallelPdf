@@ -41,7 +41,7 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
 }
 
 
-void refresh(PdfState & state,  int ivar , bool all, bool docache) {
+double refresh(PdfState & state,  int ivar , bool all, bool docache, bool print=true) {
   auto const & pdfsV = PdfReferenceState::me().pdfs();
   auto mpdf = PdfReferenceState::me().pdfs().back();
   auto npdfs = PdfReferenceState::me().pdfs().size();
@@ -50,9 +50,11 @@ void refresh(PdfState & state,  int ivar , bool all, bool docache) {
   else state.deps(pdfs,dep, docache);
 
   assert(pdfs.size()==dep.size());
-  for (auto i=0U; i<pdfs.size(); ++i)
-    std::cout << pdfs[i] <<"," << dep[i] <<" ";
-  std::cout << std::endl;
+  if (print) {
+    for (auto i=0U; i<pdfs.size(); ++i)
+      std::cout << pdfs[i] <<"," << dep[i] <<" ";
+    std::cout << std::endl;
+  }
   if (!pdfs.empty()) assert(mpdf->num()==pdfs.back());
 
   for (auto i: pdfs) state.cacheIntegral(i);
@@ -80,8 +82,8 @@ void refresh(PdfState & state,  int ivar , bool all, bool docache) {
   
   ret += mpdf->ExtendedTerm(state,tot);
 
-  std::cout << "result " << ret << std::endl;
-
+  if (print) std::cout << "result " << ret << std::endl;
+  return ret;
 }
 
 
@@ -146,15 +148,30 @@ int main() {
   std::cout << std::endl;
   std::cout << std::endl;
 
-
   for (auto i = 0U; i!=vars.size(); ++i) {
     if (vars[i]->isData() || vars[i]->IsConstant()) continue;
     auto v = vars[i]->GetVal();
     auto e = vars[i]->GetError();
-    PdfModifiedState mstate(&refState,i, v+e);
+    PdfModifiedState mstate1(&refState,i, v+e);
     std::cout << "var " << i << ":   ";
-    refresh(mstate, i,false,false);
+    refresh(mstate1, i,false,false);
   }
+
+
+  std::cout << "\nderivs:  ";
+  for (auto i = 0U; i!=vars.size(); ++i) {
+    if (vars[i]->isData() || vars[i]->IsConstant()) continue;
+    auto v = vars[i]->GetVal();
+    auto e = vars[i]->GetError();
+    PdfModifiedState mstate1(&refState,i, v+e);
+    auto p = refresh(mstate1, i,false,false,false);
+    PdfModifiedState mstate2(&refState,i, v-e);
+    auto n = refresh(mstate2, i,false,false,false);
+    std::cout << (p-n)/(2*e) << ", ";
+  }
+  std::cout << std::endl;
+  std::cout << std::endl;
+
   refresh(refState,-1,false,true);
   std::cout << std::endl;
   refresh(refState,-1,true,true);
