@@ -36,6 +36,7 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
   return model;
 }
 
+
 double refresh(PdfState & state,  int ivar , bool all, bool docache, bool print=true) {
   auto const & pdfsV = PdfReferenceState::me().pdfs();
   auto mpdf = PdfReferenceState::me().pdfs().back();
@@ -63,30 +64,40 @@ double refresh(PdfState & state,  int ivar , bool all, bool docache, bool print=
   auto tot = state.data().GetEntries();
   alignas(ALIGNMENT) double lres[256];
   double * res=0;
-  TMath::IntLog localValue;
-  for (auto ie=0U; ie<tot; ie+= 256) {
-    auto offset = ie;
-    auto bsize = std::min(256U,tot-ie);
-    // the order is correct...
-    for (auto i: pdfs) state.cachePdf(i,bsize,offset);
-    res = state.value(lres, bsize,offset);
-    assert(res==&lres[0]);
-    localValue = IntLogAccumulate(localValue, res, bsize);
-  }
-  auto ret = -0.693147182464599609375*localValue.value();
-  
-  ret += mpdf->ExtendedTerm(state,tot);
+  auto npar = Data::inPart();
+  auto ret = mpdf->ExtendedTerm(state,tot);
 
-  if (print) std::cout << "result " << ret << std::endl;
+  size_t ltot=0;
+  for (auto ip=0U; ip<npar; ++ip) {
+    auto lp = state.data().startP(ip);
+    auto ln = state.data().sizeP(ip);
+    TMath::IntLog localValue;
+    for (auto ie=0U; ie<ln; ie+= 256) {
+      auto offset = lp+ie;
+      auto bsize = std::min(256UL,ln-ie);
+      ltot +=bsize;
+      // the order is correct...
+      if (ivar<0) for (auto i: pdfs) state.cachePdf(i,bsize,offset);
+      res = state.value(lres, bsize,offset);
+      assert(res==&lres[0]);
+      localValue = IntLogAccumulate(localValue, res, bsize);
+    }
+    ret += -0.693147182464599609375*localValue.value();
+  }
+  assert(tot==ltot);
+
+  if (print) std::cout << "result " << ltot << " " << ret << std::endl;
   return ret;
 }
 
 
 
+int doit (unsigned int N) {
 
-int main() {
 
-  const unsigned int N = 10000;
+  //  const unsigned int N = 10000;
+
+  std::cout << "Partitions " << Data::inPart() << std::endl;
 
   // Define the variables
   DataVariable x("x","",-0.2,0.2); // DE
@@ -158,5 +169,21 @@ int main() {
 
   delete model; // sic
   return 0;
+
+}
+
+
+int main() {
+
+  // Data::nPartions=2;
+  const unsigned int N = 20000;
+  
+  doit(N);
+  
+  
+  Data::nPartions=2;
+  
+  PdfReferenceState::me().reset();
+  doit(N);
 
 }

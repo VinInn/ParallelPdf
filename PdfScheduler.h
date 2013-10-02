@@ -43,9 +43,9 @@ public:
     setChunks();
   }
   
-  void setChunks();
+  inline void setChunks();
 
-  ~PdfScheduler();
+  inline ~PdfScheduler();
 
   size_t nBlockEvents() const { return m_nBlockEvents;}
 

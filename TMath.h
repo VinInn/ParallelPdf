@@ -9,7 +9,7 @@ inline void * memalign(size_t a, size_t n) { void * p=0;  posix_memalign(&p,a,n)
 #include <malloc.h>
 #endif
 #ifndef ALIGNMENT
-#define ALIGNMENT 32
+#define ALIGNMENT 16
 #endif
 
 // #define ASSUME_ALIGNED(x,i) __builtin_assume_aligned(x,i)

@@ -70,6 +70,10 @@ public:
 
   PdfReferenceState() : m_indexDep(1,0), m_indexPdf(1,0), initialized(false){}
 
+  void reset() {
+    *this = PdfReferenceState();
+  }
+
   void init(const Data & idata);
 
   static PdfReferenceState & me();

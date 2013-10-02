@@ -79,6 +79,9 @@ class Data final : public Named {
   }
 
 
+ size_t startP(int i) const {
+    return m_start[i];
+  }
   size_t sizeP(int i) const {
     return m_size[i];
   }

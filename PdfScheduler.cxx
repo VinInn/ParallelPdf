@@ -1,3 +1,5 @@
+#define DOPRINT
+
 #include "PdfScheduler.h"
 
 
@@ -55,11 +57,11 @@ void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) {
   
   /*
   { Guard g(global::coutLock);  
-    std::cout << nPdfToEval << " chunk "<< omp_get_thread_num() << " " 
+    std::cout << nPdfToEval << " chunk "<< omp_get_thread_num() << "," << Data::partition() << " "  
 	      << mstates[k].param() <<',' << mstates[k].paramVal(mstates[k].param())
 	      << " " << ls<<',' <<ln
 	      << " : " <<  ist << ' ' << k << " " << icu << ' ' << localValue.value() << std::endl; 
-	      }
+  }
   */
 }
 
@@ -176,7 +178,7 @@ void PdfScheduler::doTasks() noexcept {
 	while (ip<int(nevals) && !std::atomic_compare_exchange_weak(&aw,&ip,ip+1));
 	if (ip==int(nevals)) break;
 	computeChunk(ip,lc-1);
-	--pdfDone[lc-1];
+	--pdfDone[k];
       }
       lc = nChunks[meG];
       while (lc>0 && !std::atomic_compare_exchange_weak(&nChunks[meG],&lc,lc-1));
