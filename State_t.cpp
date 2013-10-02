@@ -73,7 +73,7 @@ double refresh(PdfState & state,  int ivar , bool all, bool docache, bool print=
     auto offset = ie;
     auto bsize = std::min(256U,tot-ie);
     // the order is correct...
-    for (auto i: pdfs) state.cachePdf(i,bsize,offset);
+    if (docache) for (auto i: pdfs) state.cachePdf(i,bsize,offset);
     res = state.value(lres, bsize,offset);
     assert(res==&lres[0]);
     localValue = IntLogAccumulate(localValue, res, bsize);
@@ -158,7 +158,30 @@ int main() {
   }
 
 
-  std::cout << "\nderivs:  ";
+  std::cout << "\nderivs:\n";
+
+  for (auto ak=0; ak!=2; ++ak) {
+    for (auto i = 0U; i!=vars.size(); ++i) {
+      if (vars[i]->isData() || vars[i]->IsConstant()) continue;
+      auto v = vars[i]->GetVal();
+      auto e = vars[i]->GetError();
+      vars[i]->SetVal(v+e);
+      auto p =  (ak>0) ?
+	refresh(ncState, -1,true,false,false) :
+	refresh(refState,-1,false, true,false);
+      vars[i]->SetVal(v-e);
+      auto n =  (ak>0) ?
+	refresh(ncState, -1,true,false,false) :
+	refresh(refState,-1,false, true,false);
+      vars[i]->SetVal(v);
+      std::cout << (p-n)/(2*e) << ", ";
+    }
+    std::cout << std::endl;
+  }
+
+  refresh(refState,-1,true,true,false);
+
+
   for (auto i = 0U; i!=vars.size(); ++i) {
     if (vars[i]->isData() || vars[i]->IsConstant()) continue;
     auto v = vars[i]->GetVal();

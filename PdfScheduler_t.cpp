@@ -36,7 +36,7 @@ AbsPdf *Model(Variable &x, Variable &y, Variable &z, const Int_t N)
   return model;
 }
 
-void refresh(PdfState & state,  int ivar , bool all, bool docache) {
+double refresh(PdfState & state,  int ivar , bool all, bool docache, bool print=true) {
   auto const & pdfsV = PdfReferenceState::me().pdfs();
   auto mpdf = PdfReferenceState::me().pdfs().back();
   auto npdfs = PdfReferenceState::me().pdfs().size();
@@ -45,9 +45,11 @@ void refresh(PdfState & state,  int ivar , bool all, bool docache) {
   else state.deps(pdfs,dep, docache);
 
   assert(pdfs.size()==dep.size());
-  for (auto i=0U; i<pdfs.size(); ++i)
-    std::cout << pdfs[i] <<"," << dep[i] <<" ";
-  std::cout << std::endl;
+  if (print) {
+    for (auto i=0U; i<pdfs.size(); ++i)
+      std::cout << pdfs[i] <<"," << dep[i] <<" ";
+    std::cout << std::endl;
+  }
   if (!pdfs.empty()) assert(mpdf->num()==pdfs.back());
 
   for (auto i: pdfs) state.cacheIntegral(i);
@@ -75,9 +77,10 @@ void refresh(PdfState & state,  int ivar , bool all, bool docache) {
   
   ret += mpdf->ExtendedTerm(state,tot);
 
-  std::cout << "result " << ret << std::endl;
-
+  if (print) std::cout << "result " << ret << std::endl;
+  return ret;
 }
+
 
 
 
@@ -129,13 +132,28 @@ int main() {
   }
   assert(k==2*nvar);
 
-
   double deriv[nvar];
   differentiate(refState,nvar,vars,steps,deriv);
 
   for ( auto d : deriv) 
     std::cout << d << ' ';
   std::cout << std::endl;
+
+
+  for (auto i = 0U; i!=pdfPars.size(); ++i) {
+    if (pdfPars[i]->isData() || pdfPars[i]->IsConstant()) continue;
+    auto v = pdfPars[i]->GetVal();
+    auto e = pdfPars[i]->GetError();
+    pdfPars[i]->SetVal(v+e);
+    auto p = refresh(refState,-1,false, true,false);
+    pdfPars[i]->SetVal(v-e);    
+    auto n = refresh(refState,-1,false, true,false);
+    std::cout << (p-n)/(2*e) << ' ';
+    pdfPars[i]->SetVal(v);    
+    }
+    std::cout << std::endl;
+
+
 
 
   delete model; // sic

@@ -132,7 +132,6 @@ while (k>0 && !std::atomic_compare_exchange_weak(&dep[i],&k,k-1));
 
 
 void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) {
-
   // { Guard g(global::coutLock);  std::cout << nPdfToEval << " chunk "<< omp_get_thread_num() << " : " <<  ist << " " << icu << std::endl; }
 
   // stupid spinlock waiting for integrals...
@@ -147,16 +146,25 @@ void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) {
   auto ln = std::min(data.sizeP()-icu*chunk,chunk);
 
   alignas(ALIGNMENT) double lres[block];
-    double * res=0;
-    TMath::IntLog localValue;
-    for (auto ie=0U; ie<ln; ie+= block) {
-      auto offset = ls+ie;
-      auto bsize = std::min(block,ln-ie);
-      res = mstates[k].value(lres, bsize,offset);
-      assert(res==&lres[0]);
-      localValue = IntLogAccumulate(localValue, res, bsize);
-    }
-    chunkResult(k,localValue);
+  double * res=0;
+  TMath::IntLog localValue;
+  for (auto ie=0U; ie<ln; ie+= block) {
+    auto offset = ls+ie;
+    auto bsize = std::min(block,ln-ie);
+    res = mstates[k].value(lres, bsize,offset);
+    assert(res==&lres[0]);
+    localValue = IntLogAccumulate(localValue, res, bsize);
+  }
+  chunkResult(k,localValue);
+  
+  /*
+  { Guard g(global::coutLock);  
+    std::cout << nPdfToEval << " chunk "<< omp_get_thread_num() << " " 
+	      << mstates[k].param() <<',' << mstates[k].paramVal(mstates[k].param())
+	      << " " << ls<<',' <<ln
+	      << " : " <<  ist << ' ' << k << " " << icu << ' ' << localValue.value() << std::endl; 
+	      }
+  */
 }
 
 
@@ -275,7 +283,7 @@ void PdfScheduler::doTasks() noexcept {
 	int is =  aw;
 	while (is>0 && !std::atomic_compare_exchange_weak(&aw,&is,is-1));
 	if (is<=0) break;
-	mstates[ls].cacheIntegral(is-1);
+	mstates[ls].cacheYourIntegral(is-1);
 
 	// pseudo queue
 	is = integDone[ls];

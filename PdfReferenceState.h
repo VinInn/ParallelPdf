@@ -44,6 +44,13 @@ public:
   void cacheIntegral(size_t i) const final;
   void cachePdf(size_t i, unsigned int bsize,  unsigned int dataOffset) const final;
 
+
+  void cacheYourIntegral(size_t i) const final {
+    return cacheIntegral(i);
+  }
+
+
+
   void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool doCache) const {
     refresh(res,dep,-1, doCache, false);
   }
@@ -122,6 +129,8 @@ public:
   }
 
 
+  unsigned short param() const { return m_param; }
+
 
   // return value for Paramer i;
   double paramVal(size_t i) const final { return i== m_param ?  m_value : m_reference->paramVal(i);}
@@ -133,6 +142,7 @@ public:
   void cacheIntegral(size_t i) const final;
   void cachePdf(size_t i, unsigned int bsize,  unsigned int dataOffset) const final;
 
+  void cacheYourIntegral(size_t i) const final;
 
   void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool) const final {
     res = m_pdfs; dep = m_deps;
@@ -187,6 +197,10 @@ public:
 
   void cacheIntegral(size_t i) const final;
   void cachePdf(size_t, unsigned int,  unsigned int) const final {}
+
+  void cacheYourIntegral(size_t i) const final {
+    return cacheIntegral(i);
+  }
 
  
   void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool) const final {

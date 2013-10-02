@@ -32,6 +32,12 @@ void PdfModifiedState::cacheIntegral(size_t i) const {
   else m_InvIntegrals[k] = 1./m_reference->pdf(i)->integral(*this);
 }
 
+
+void PdfModifiedState::cacheYourIntegral(size_t i) const {
+  m_InvIntegrals[i] = 1./m_reference->pdf(m_pdfs[i])->integral(*this);
+}
+
+
 void PdfReferenceState::cacheIntegral(size_t i) const {
   // std::cout << "cashing integral" << i << std::endl;
   m_InvIntegrals[i] = 1./pdf(i)->integral(*this);

@@ -37,6 +37,9 @@ public:
   virtual void cachePdf(size_t i, unsigned int bsize,  unsigned int dataOffset)  const =0;
 
 
+  virtual void cacheYourIntegral(size_t i) const =0;
+
+
   virtual void deps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep,  bool doCache) const =0;
   virtual void allDeps(std::vector<unsigned short> & res, std::vector<unsigned short> & dep, bool doCache) const =0;
 
