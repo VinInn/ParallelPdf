@@ -10,6 +10,8 @@
 #endif
 #include "MsgService.h"
 #include "PdfReferenceState.h"
+#include "PdfScheduler.h"
+
 
 #include "TRandom.h"
 #include <cmath>
@@ -38,7 +40,7 @@ std::string outputStatus(int status)
 
 double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data, 
 	     AbsPdf & model, bool runMinos,
-	     const char* label, int dynamic, bool docache, bool parderiv)
+	     const char* label, int dynamic, bool docache, int way)
 {
   // Do the calculation
   std::cout << "Runs the algorithm with `" << label << "'" << std::endl;
@@ -67,7 +69,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
   if (Iter>0) {
     PdfReferenceState & refState = PdfReferenceState::me();
 
-    auto pdfPars = PdfReferenceState::me().variables();
+    auto pdfPars = refState.variables();
     auto v1 = nll.GetVal(false); // init cache if needed
     auto v2 = nll.GetVal();
 
@@ -81,7 +83,7 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
     assert(k==nvar);
    
 
-    if (!parderiv) {
+    if (way<=0) {
       {
 	auto vr = pdfPars[var[0]];
 	auto v = vr->GetVal();
@@ -197,17 +199,29 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
     }
       
 
-
-
-
-
     
     for (unsigned int i=0; i<Iter; i++) {
       nll.GetVal(false);
       // fake computation of derivatives
       // double dvup[nvar*Data::ipar()]={0,}, vdown[nvar::ipar()]={0,};
 
-      if (parderiv) {
+      if (way<0) {
+	double steps[2*nvar];
+	
+	k=0;
+	for (auto i : var) {
+	  auto e = pdfPars[i]->GetError();
+	  steps[k++]=e;
+	  steps[k++]=-e;
+	}
+	assert(k==2*nvar);
+	
+	double deriv[nvar];
+	differentiate(refState,nvar,var,steps,deriv);
+
+	for ( auto d : deriv) value+=d;
+
+      } else if (way>0) {
 	// outer parallel...
 	auto nloops = 2*nvar;
 	std::atomic<int> ok[nvar];for ( auto & o : ok) o=0;
@@ -247,10 +261,11 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 	  auto v = vr->GetVal();
 	  auto e = vr->GetError();
 	  vr->SetAllVal(v+e);
-	  value += nll.GetVal();
+	  auto p = nll.GetVal();
 	  vr->SetAllVal(v-e);
-	  value -= nll.GetVal();
+	  auto n = nll.GetVal();
 	  vr->SetAllVal(v);
+	  value += (p-n)/(2*e);
 	}
       }
 
@@ -348,6 +363,7 @@ int main(int argc, char **argv)
     std::cout << "-c use cache (false by default)\n";
     std::cout << "-a numa affinity (0 by default; otherwise is number of partitions)\n";
     std::cout << "-p compute derivative in parallel (false by default)\n";
+    std::cout << "-s use dynamic scheduler (false by default)\n";
 
     std::cout << std::endl;
     return 0;
@@ -360,9 +376,13 @@ int main(int argc, char **argv)
   const int  dynamic              = ReadIntOption(argc,argv,"-d",0);
   bool docache              = (FindOption(argc,argv,"-c")>=0);
   const bool parderiv             = (FindOption(argc,argv,"-p")>=0);
+  const bool schedule             = (FindOption(argc,argv,"-s")>=0);
   int numa                  = ReadIntOption(argc,argv,"-a",0);
 
-  if (parderiv) docache = true;
+  if (parderiv|schedule) docache = true;
+  int way=0;
+  if (parderiv) way=1;
+  if (schedule) way -1;
 
   const char* datafile = "data1M.dat";
 
@@ -431,7 +451,7 @@ int main(int argc, char **argv)
 
   // Do the calculation with OpenMP
   label = "OpenMP";
-  DoNLL(Iter,blockSize,data,*model,runMinos,label.c_str(),dynamic,docache,parderiv);
+  DoNLL(Iter,blockSize,data,*model,runMinos,label.c_str(),dynamic,docache,way);
 
   delete model;
 
