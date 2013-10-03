@@ -2,7 +2,7 @@
 #include "Partitioner.h"
 #include "Variable.h"
 
-
+#define NUMACTL
 #ifdef NUMACTL
 #include <numa.h>
 #endif
@@ -61,7 +61,7 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
     bool t0 = 0== omp_get_thread_num()%(OpenMP::GetNumThreads()/inPart());
     if (t0) {
 #ifdef NUMACTL
-      numa_setlocal_memory();
+//      numa_setlocal_memory();
 #endif
       auto me = partition();
       int ls=0; int le=0;
@@ -69,12 +69,14 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
       m_stride[me] = stride(nev); 
       m_capacity[me]= nvars*m_stride[me];
 #ifdef NUMACTL
-      m_data[me]= (Value_t*)numa_alloc(m_capacity[me]*sizeof(Value_t));
+      m_data[me]= (Value_t*)numa_alloc_local(m_capacity[me]*sizeof(Value_t));
+      memset(m_data[me], -1, m_capacity[me]*sizeof(Value_t));  // required???
 #else
       m_data[me]= (Value_t*)memalign(ALIGNMENT,m_capacity[me]*sizeof(Value_t));
       // force the OS to allocate physical memory for the region
       memset(m_data[me], -1, m_capacity[me]*sizeof(Value_t));
 #endif
+      assert(0==((size_t)(m_data[me])&(size_t)(ALIGNMENT-1)));
       m_start[me]=ls;
     }
 
@@ -84,7 +86,7 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
 
 
 #ifdef NUMACTL
-Data::~Data() { for(auto d:m_data) numa_free(d); }
+Data::~Data() { int k=0; for(auto d:m_data) numa_free(d,m_capacity[k++]*sizeof(Value_t) ); }
 #else
 Data::~Data() { for(auto d:m_data) free(d); }
 #endif
