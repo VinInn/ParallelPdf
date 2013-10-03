@@ -235,7 +235,7 @@ namespace TMath {
   }
 
 
-  struct alignas(128) IntLog {
+  struct alignas(64) IntLog {
     IntLog() : iexp(0), mantissa(1.){}
     IntLog(int i, double m) : iexp(i), mantissa(m){}
     int iexp=0;
