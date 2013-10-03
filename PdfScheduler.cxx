@@ -1,4 +1,4 @@
-#define DOPRINT
+// #define DOPRINT
 
 #include "PdfScheduler.h"
 

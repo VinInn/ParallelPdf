@@ -382,7 +382,7 @@ int main(int argc, char **argv)
   if (parderiv|schedule) docache = true;
   int way=0;
   if (parderiv) way=1;
-  if (schedule) way -1;
+  if (schedule) way=-1;
 
   const char* datafile = "data1M.dat";
 
