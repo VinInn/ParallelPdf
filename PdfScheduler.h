@@ -36,9 +36,10 @@ public:
  
 
   PdfScheduler(size_t inevals, PdfModifiedState const * imstates, TMath::IntLog * ivalues, size_t bsize) :
-    m_nBlockEvents(bsize), nevals(inevals), mstates(imstates), values(ivalues),
+    m_nBlockEvents(bsize), nevals(inevals), mstates(imstates), values(ivalues),locks(nevals),
     istate(0), integToDo(inevals), integDone(inevals), 
     nPdfToEval(0), pdfToEval(inevals,-1),stateReady(inevals) {
+    for (auto & l : locks) l=false;
     for ( auto k=0U; k!=integDone.size(); ++k)  { integToDo[k]=integDone[k]=mstates[k].size(); }
     setChunks();
   }
@@ -64,9 +65,10 @@ private:
   size_t nevals;
   PdfModifiedState const * mstates;
   TMath::IntLog * values;
+  std::vector<std::atomic<bool> > locks;
 
   std::atomic<int> istate;
-    std::vector<std::atomic<int> > integToDo;
+  std::vector<std::atomic<int> > integToDo;
   std::vector<std::atomic<int> > integDone;
 
   std::atomic<unsigned int> nPdfToEval;

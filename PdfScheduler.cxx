@@ -9,8 +9,12 @@ namespace global {
 }
 
 void PdfScheduler::chunkResult(size_t i, TMath::IntLog value) {
-  Guard g(global::coutLock); // FIXME
+  bool locked = false;
+  // spin lock
+  while (!std::atomic_compare_exchange_weak(&locks[i],&locked,true)) { std::this_thread::yield(); locked=false;}
+  // Guard g(global::coutLock); // FIXME
   values[i].reduce(value);
+  locks[i]=false;
 }
 
 
