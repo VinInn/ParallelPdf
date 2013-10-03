@@ -1,8 +1,9 @@
 #include "Data.h"
 #include "Partitioner.h"
 #include "Variable.h"
-
+#ifndef __APPLE__
 #define NUMACTL
+#endif
 #ifdef NUMACTL
 #include <numa.h>
 #endif
