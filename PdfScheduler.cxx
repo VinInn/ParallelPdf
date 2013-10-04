@@ -138,9 +138,9 @@ void PdfScheduler::doTasks() noexcept {
 
 
 
-  int ls = istate;
+  aint ls = istate;
   
-  int lc = nChunks[meG];
+  aint lc = nChunks[meG];
   int start=iChunks[meG];
 
   switch (todo) {
@@ -150,7 +150,7 @@ void PdfScheduler::doTasks() noexcept {
       if (ls==int(nevals)) break;
       auto & aw = integToDo[ls]; 
       while(true) {
-	int is =  aw;
+	aint is =  aw;
 	while (is>0 && !std::atomic_compare_exchange_weak(&aw,&is,is-1));
 	if (is<=0) break;
 	mstates[ls].cacheYourIntegral(is-1);
@@ -181,7 +181,7 @@ void PdfScheduler::doTasks() noexcept {
       assert(k>=0 && k<pdfToDo.size());
       auto & aw = pdfToDo[k]; 
       while(true) {
-	int ip =  aw;
+	aint ip =  aw;
 	while (ip<int(nevals) && !std::atomic_compare_exchange_weak(&aw,&ip,ip+1));
 	if (ip==int(nevals)) break;
 	computeChunk(ip,k);

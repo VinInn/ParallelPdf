@@ -32,6 +32,8 @@ class PdfScheduler {
   
 public:
 
+  using aint = int; // long long;
+
   enum What { integral, chunk, reduction};
  
 
@@ -67,21 +69,21 @@ private:
   TMath::IntLog * values;
   std::vector<std::atomic<bool> > locks;
 
-  std::atomic<int> istate;
-  std::vector<std::atomic<int> > integToDo;
-  std::vector<std::atomic<int> > integDone;
+  std::atomic<aint> istate;
+  std::vector<std::atomic<aint> > integToDo;
+  std::vector<std::atomic<aint> > integDone;
 
   std::atomic<unsigned int> nPdfToEval;
-  std::vector<int> pdfToEval;
+  std::vector<aint> pdfToEval;
 
-  std::vector<std::atomic<int> > nChunks;
-  std::vector<int> iChunks;
+  std::vector<std::atomic<aint> > nChunks;
+  std::vector<aint> iChunks;
   std::vector<unsigned int> kBlock;
-  std::vector<std::atomic<int> >  pdfToDo;
-  std::vector<std::atomic<int> >  pdfDone;
+  std::vector<std::atomic<aint> >  pdfToDo;
+  std::vector<std::atomic<aint> >  pdfDone;
 
 
-  std::vector<std::atomic<int> > stateReady;
+  std::vector<std::atomic<aint> > stateReady;
   
 };
 
@@ -122,15 +124,15 @@ void PdfScheduler::setChunks() {
 
   auto block = m_nBlockEvents;
 
-  nChunks=std::vector<std::atomic<int> >(npar);
+  nChunks=std::vector<std::atomic<aint> >(npar);
   iChunks.resize(npar+1,0);
   for (auto i=0U; i<npar; ++i) {
     auto nb = data.sizeP(i)/(4*block);
     if (0!= data.sizeP(i)%block) ++nb;
 
     kBlock.push_back(0);
-    if (nb>1) {
-    for (auto k=1;k<nb-1; ++k) kBlock.push_back(kBlock.back()+4);
+    if (nb>1U) {
+    for (auto k=1u;k<nb-1; ++k) kBlock.push_back(kBlock.back()+4);
     kBlock.push_back(kBlock.back()+2);kBlock.push_back(kBlock.back()+2);
     ++nb;
     }
@@ -154,8 +156,8 @@ void PdfScheduler::setChunks() {
   }
   assert(kBlock.size()==iChunks.back());
   kBlock.push_back(0);
-  pdfToDo=std::vector<std::atomic<int> >(iChunks.back());
-  pdfDone=std::vector<std::atomic<int> >(iChunks.back());
+  pdfToDo=std::vector<std::atomic<aint> >(iChunks.back());
+  pdfDone=std::vector<std::atomic<aint> >(iChunks.back());
   for( auto & a : pdfToDo) { a=0;}
   for( auto & a : pdfDone) { a=nevals;}
 
