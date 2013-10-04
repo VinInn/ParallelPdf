@@ -125,10 +125,17 @@ void PdfScheduler::setChunks() {
   nChunks=std::vector<std::atomic<int> >(npar);
   iChunks.resize(npar+1,0);
   for (auto i=0U; i<npar; ++i) {
-    auto nb = data.sizeP(i)/block;
+    auto nb = data.sizeP(i)/(4*block);
     if (0!= data.sizeP(i)%block) ++nb;
-    // for (auto k=1;k<nChunks[i]; ++k) kBlock.push_back(kBlock.back()+4);
 
+    kBlock.push_back(0);
+    if (nb>1) {
+    for (auto k=1;k<nb-1; ++k) kBlock.push_back(kBlock.back()+4);
+    kBlock.push_back(kBlock.back()+2);kBlock.push_back(kBlock.back()+2);
+    ++nb;
+    }
+    auto n = nb;
+    /*
     auto kb=nb/2; 
     auto ib = nb-kb;
     kBlock.push_back(0);
@@ -140,6 +147,7 @@ void PdfScheduler::setChunks() {
       ib -=kb;
       ++n;
     }
+    */
     nChunks[i] = n;
     iChunks[i+1] = iChunks[i]+nChunks[i];
     assert(kBlock.size()==iChunks[i+1]);
