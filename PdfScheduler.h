@@ -76,7 +76,7 @@ private:
 
   std::vector<std::atomic<int> > nChunks;
   std::vector<int> iChunks;
-
+  std::vector<unsigned int> kBlock;
   std::vector<std::atomic<int> >  pdfToDo;
   std::vector<std::atomic<int> >  pdfDone;
 
@@ -120,15 +120,32 @@ void PdfScheduler::setChunks() {
   auto npar = Data::inPart();
   // auto ntot = data.size();
 
-  auto chunk = 4*m_nBlockEvents;
+  auto block = m_nBlockEvents;
 
   nChunks=std::vector<std::atomic<int> >(npar);
   iChunks.resize(npar+1,0);
   for (auto i=0U; i<npar; ++i) {
-    nChunks[i] = data.sizeP(i)/chunk;
-    if (0!= data.sizeP(i)%chunk) ++nChunks[i];
+    auto nb = data.sizeP(i)/block;
+    if (0!= data.sizeP(i)%block) ++nb;
+    // for (auto k=1;k<nChunks[i]; ++k) kBlock.push_back(kBlock.back()+4);
+
+    auto kb=nb/2; 
+    auto ib = nb-kb;
+    kBlock.push_back(0);
+    auto n=1;
+    while (kb>0) {
+      kBlock.push_back(kBlock.back()+ib);
+      ib = kb;
+      kb /= 2; // ok >>1
+      ib -=kb;
+      ++n;
+    }
+    nChunks[i] = n;
     iChunks[i+1] = iChunks[i]+nChunks[i];
+    assert(kBlock.size()==iChunks[i+1]);
   }
+  assert(kBlock.size()==iChunks.back());
+  kBlock.push_back(0);
   pdfToDo=std::vector<std::atomic<int> >(iChunks.back());
   pdfDone=std::vector<std::atomic<int> >(iChunks.back());
   for( auto & a : pdfToDo) { a=0;}

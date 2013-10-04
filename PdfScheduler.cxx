@@ -43,12 +43,12 @@ void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) {
   assert(k>=0 && k<nevals);
 
   auto block =  nBlockEvents();
-  auto chunk = 4*block;  // we know
   auto const & data = mstates[k].data();
 
-  auto ls = data.startP()+icu*chunk;
-  auto ln = std::min(data.sizeP()-icu*chunk,chunk);
-
+  auto ls = data.startP()+kBlock[icu]*block;
+  auto ln = (0==kBlock[icu+1]) ? data.sizeP() : kBlock[icu+1]*block ;
+  ln -= kBlock[icu]*block;
+  assert(ln>0);
   alignas(ALIGNMENT) double lres[block];
   double * res=0;
   TMath::IntLog localValue;
@@ -184,7 +184,7 @@ void PdfScheduler::doTasks() noexcept {
 	int ip =  aw;
 	while (ip<int(nevals) && !std::atomic_compare_exchange_weak(&aw,&ip,ip+1));
 	if (ip==int(nevals)) break;
-	computeChunk(ip,lc-1);
+	computeChunk(ip,k);
 	--pdfDone[k];
       }
       lc = nChunks[meG];
