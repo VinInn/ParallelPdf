@@ -4,7 +4,7 @@
 echo "|n-events | Affinity | Job-type | CPU-CPU | task-clock | cycles | instructions | stalled-cycles-frontend | stalled-cycles-backend | cache-misses | cache-references | branch-misses | L1-dcache-misses | L1-icache-misses | dTLB-misses | iTLB-misses | seconds |"
 echo " " 
 
-foreach nev (100000 200000 300000 400000 600000 800000)
+foreach nev (102400 204800 307200 409600 614400 819200)
 
 setenv GOMP_CPU_AFFINITY "0-31"
 

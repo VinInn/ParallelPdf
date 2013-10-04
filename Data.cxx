@@ -77,12 +77,13 @@ void Data::allocate(UInt_t size, UInt_t nvars) {
       // force the OS to allocate physical memory for the region
       memset(m_data[me], -1, m_capacity[me]*sizeof(Value_t));
 #endif
+      assert(m_data[me]!=nullptr);
       assert(0==((size_t)(m_data[me])&(size_t)(ALIGNMENT-1)));
       m_start[me]=ls;
     }
 
   }
-
+  for (auto me = 0U; me!=inPart(); ++me) assert(m_data[me]!=nullptr);
 }
 
 
