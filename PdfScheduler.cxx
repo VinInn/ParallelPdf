@@ -11,8 +11,8 @@ namespace global {
 void PdfScheduler::chunkResult(size_t i, TMath::IntLog value) {
   bool locked = false;
   // spin lock
-  while (!std::atomic_compare_exchange_weak(&locks[i],&locked,true)) { std::this_thread::yield(); locked=false;}
-  // Guard g(global::coutLock); // FIXME
+  while (!std::atomic_compare_exchange_weak(&locks[i],&locked,true)) { locked=false; nanosleep(0,0); /*std::this_thread::yield();*/}
+  // Guard g(global::coutLock); // for test
   values[i].reduce(value);
   locks[i]=false;
 }
@@ -164,8 +164,8 @@ void PdfScheduler::doTasks() noexcept {
 	  //push ls
 	  unsigned int k = nPdfToEval;
 	  while (!std::atomic_compare_exchange_weak(&nPdfToEval,&k,k+1));
-	  assert(k<nevals);
 	  pdfToEval[k]=ls;
+          assert(k<nevals);
 	} 
       }
       ls = istate;
