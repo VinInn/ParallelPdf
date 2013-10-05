@@ -11,7 +11,7 @@ namespace global {
 void PdfScheduler::chunkResult(size_t i, TMath::IntLog value) {
   bool locked = false;
   // spin lock
-  while (!std::atomic_compare_exchange_weak(&locks[i],&locked,true)) { locked=false; nanosleep(0,0); /*std::this_thread::yield();*/}
+  while (!std::atomic_compare_exchange_weak(&locks[i],&locked,true)) { locked=false; /*nanosleep(0,0); */ std::this_thread::yield();}
   // Guard g(global::coutLock); // for test
   values[i].reduce(value);
   locks[i]=false;
@@ -37,7 +37,7 @@ void PdfScheduler::computeChunk(unsigned int ist, unsigned int icu) {
   // { Guard g(global::coutLock);  std::cout << nPdfToEval << " chunk "<< omp_get_thread_num() << " : " <<  ist << " " << icu << std::endl; }
 
   // stupid spinlock waiting for integrals...
-  while (ist>=nPdfToEval || pdfToEval[ist]<0) nanosleep(0,0); // std::this_thread::yield();
+  while (ist>=nPdfToEval || pdfToEval[ist]<0) /* nanosleep(0,0); */ std::this_thread::yield();
   assert(ist<nPdfToEval);
   auto k = pdfToEval[ist];
   assert(k>=0 && k<nevals);
