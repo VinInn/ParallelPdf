@@ -108,7 +108,7 @@ public:
     auto invInt = invIntegral(state);
     double const * __restrict__  const *  kres = pres;
     // double const * kres = lres[0];
-    // #pragma omp simd
+#pragma omp simd aligned(res, kres : ALIGNMENT)
     for (auto idx = 0; idx<bsize; ++idx) {
       // res[idx] = add(kres,coeff,idx,strid)*invIntegral;
       res[idx] = add(kres,coeff,idx)*invInt;

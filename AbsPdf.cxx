@@ -8,9 +8,8 @@ void AbsPdf::RandomizeFloatParameters()
   GetParameters(pdfPars);
   pdfPars.Sort();
   pdfPars.ResetIterator();
-  Variable *par(0);
   TRandom rand;
-  while ((par = pdfPars.Next())!=0) {
+  for(auto par : pdfPars() ) {
     if (!par->IsConstant()) {
       std::cout << par->GetName() << " = " << par->GetVal();
       par->SetAllVal(rand.Uniform(par->getMin(),par->getMax()));

@@ -23,7 +23,8 @@ public:
     
     auto invInt = invIntegral(state);
     auto mu = m_mu->value(state); auto wd = m_width->value(state);
-    for (auto idx = 0U; idx!=bsize; ++idx) {
+#pragma omp simd aligned(res, ldata : ALIGNMENT)
+    for (auto idx = 0U; idx<bsize; ++idx) {
       auto x = ldata[idx];
       auto y = evaluateOne(x,mu,wd)*invInt;
       res[idx] = y;

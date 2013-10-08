@@ -88,7 +88,7 @@ public:
     
     Poly poly(coeffCPU);
     
-#pragma omp simd
+#pragma omp simd aligned(res, ldata : ALIGNMENT)
     for (auto idx = 0; idx<bsize; ++idx) {
       auto x = ldata[idx];
       auto y = poly(x)*invInt;

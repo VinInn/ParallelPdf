@@ -27,7 +27,8 @@ public:
  
     auto coeff = -0.5/(m_sigma->value(state)*m_sigma->value(state));
     auto mu = m_mu->value(state);
-    for (auto idx = 0U; idx!=bsize; ++idx) {
+#pragma omp simd aligned(res, ldata : ALIGNMENT)
+    for (auto idx = 0U; idx<bsize; ++idx) {
       auto x = ldata[idx];
       auto y = evaluateOne(x,mu,coeff)*invInt;
       res[idx] = y;

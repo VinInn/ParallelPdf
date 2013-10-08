@@ -26,8 +26,8 @@ INCLUDE  = -I../
 SOLIBS = -lnuma
 
 # CXXFLAGS  = -O2 -fPIC  -march=core-avx2
-CXXFLAGS = -g -Ofast -fPIC  -march=native  -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11 -ftree-vectorizer-verbose=1 -Wall --param vect-max-version-for-alias-checks=100 -fipa-pta -DWARNINGMSG $(OPTFLAGS)
-# -fprefetch-loop-arrays
+CXXFLAGS = -g -Ofast -fPIC  -march=native  -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11 -ftree-vectorizer-verbose=1 -Wall --param vect-max-version-for-alias-checks=100  -DWARNINGMSG $(OPTFLAGS)
+# -fipa-pta -fprefetch-loop-arrays
 
 
 ifdef KNF

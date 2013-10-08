@@ -29,7 +29,8 @@ class PdfBifurGaussian : public AbsPdf {
     auto coeffL = -0.5/(m_sigmaL->value(state)*m_sigmaL->value(state));
     auto coeffR = -0.5/(m_sigmaR->value(state)*m_sigmaR->value(state));
     auto mu = m_mu->value(state);
-    for (auto idx = 0U; idx!=bsize; ++idx) {
+#pragma omp simd aligned(res, ldata : ALIGNMENT)
+    for (auto idx = 0U; idx<bsize; ++idx) {
       auto x = ldata[idx];
       auto y = evaluateOne(x,mu,coeffL,coeffR)*invInt;
       res[idx] = y;

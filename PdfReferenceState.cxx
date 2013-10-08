@@ -4,6 +4,7 @@
 #include "List.h"
 #include <set>
 #include <tuple>
+#include <functional>
 
 #include<iostream>
 

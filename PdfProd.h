@@ -79,7 +79,7 @@ private:
     
     Mult<double,N> mult;
     double const * __restrict__  const *  kres = pres;
-#pragma omp simd
+    #pragma omp simd aligned(res, kres : ALIGNMENT)
     for (auto idx = 0; idx<bsize; ++idx) {
       res[idx] = mult(kres,idx);
     }

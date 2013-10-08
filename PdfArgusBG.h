@@ -29,7 +29,9 @@ private:
  
     auto om0 = 1./m_m0->value(state);
     auto c = m_c->value(state);
-    for (auto idx = 0U; idx!=bsize; ++idx) {
+
+#pragma omp simd aligned(res, ldata : ALIGNMENT)
+    for (auto idx = 0U; idx<bsize; ++idx) {
       auto x = ldata[idx];
       auto y = evaluateOne(x,om0,c)*invInt;
       res[idx] = y;
