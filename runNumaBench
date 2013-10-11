@@ -4,44 +4,44 @@ foreach i (`seq 1 1 ${max}`)
 
 set fout=oneStatic
 echo ${fout}
-setenv GOMP_CPU_AFFINITY '0-31'
+setenv GOMP_CPU_AFFINITY '0-15'
 taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c | grep Time | awk '{ print $NF }' 
 
 set fout=oneStaticNuma
 echo ${fout}
-setenv GOMP_CPU_AFFINITY '0-31'
+setenv GOMP_CPU_AFFINITY '0-15'
 taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -a 2| grep Time | awk '{ print $NF }' 
 
 set fout=oneDynamic
 echo ${fout}
-setenv GOMP_CPU_AFFINITY '0-31'
+setenv GOMP_CPU_AFFINITY '0-15'
 taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2| grep Time | awk '{ print $NF }' 
 
 set fout=oneDynamicNuma
 echo ${fout}
-setenv GOMP_CPU_AFFINITY '0-31'
+setenv GOMP_CPU_AFFINITY '0-15'
 taskset -c 0-15 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2 -a 2| grep Time | awk '{ print $NF }' 
 
 
 set fout=splitStatic
 echo ${fout}
-setenv GOMP_CPU_AFFINITY '0-31'
+setenv GOMP_CPU_AFFINITY '0-3,8-11'
 taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c | grep Time | awk '{ print $NF }' 
 
 set fout=splitStaticNuma
 echo ${fout}
-setenv GOMP_CPU_AFFINITY '0-31'
+setenv GOMP_CPU_AFFINITY '0-3,8-11'
 taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -a 2| grep Time | awk '{ print $NF }' 
 
 
 set fout=splitDynamic
 echo ${fout}
-setenv GOMP_CPU_AFFINITY '0-31'
+setenv GOMP_CPU_AFFINITY '0-3,8-11'
 taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2| grep Time | awk '{ print $NF }' 
 
 set fout=splitDynamicNuma
 echo ${fout}
-setenv GOMP_CPU_AFFINITY '0-31'
+setenv GOMP_CPU_AFFINITY '0-3,8-11'
 taskset -c 0-3,8-11 ./main_XEON -n 800000 -b 512 -i -150 -c -d 2 -a 2| grep Time | awk '{ print $NF }' 
 
 set fout=fullStatic
