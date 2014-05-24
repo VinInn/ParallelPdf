@@ -29,7 +29,7 @@ int main(int na, char * arg[]) {
   long long sum=0;
   long long t1=0;
 
-  for (int kk=0; kk<10; ++kk) {
+  for (int kk=0; kk<50; ++kk) {
 
 #pragma omp parallel
   {
@@ -77,6 +77,6 @@ int main(int na, char * arg[]) {
 
   }
 
-  std::cout << "time " << t1 << std::endl;
+  std::cout << "time " << double(t1)*1.e-6 << std::endl;
   return 0;
 }
