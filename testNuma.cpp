@@ -1,4 +1,14 @@
 // compile with c++ -std=c++11 -O3 -fopenmp -lnuma testNuma.cpp
+/*
+c++ -std=c++11 -O3 -fopenmp -lnuma testNuma.cpp
+foreach i ( 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27)
+foreach j ( 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27)
+./a.out $i $j 120 | grep time
+end
+end
+
+*/
+
 #include <numa.h>
 #include <omp.h>
 #include<iostream>
@@ -13,7 +23,7 @@ inline unsigned long long rdtscp() {
 }
 
 
-int main(int na, char * arg[]) {
+int main(int na,  char * arg[]) {
 
   if (na<3) std::cout << "please give two thread numbers and buffer size" << std::endl; 
 
@@ -66,7 +76,7 @@ int main(int na, char * arg[]) {
   }
 
 
-  numa_free(buffer,size*4);
+  numa_free(buffer, size*4);
   buffer = nullptr;
   if (first) {
      std::cout << "sum " << sum << std::endl;
