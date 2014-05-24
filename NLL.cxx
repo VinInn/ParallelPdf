@@ -115,7 +115,8 @@ Double_t NLL::GetVal(bool verify)
   
   if (m_ngroups>0) {
 
-    int nloops[OpenMP::GetMaxNumThreads()]={0,};
+    int nloops[OpenMP::GetMaxNumThreads()];
+    for (int i=0; i<OpenMP::GetMaxNumThreads(); ++i) nloops[i]=0;
 
     std::atomic<int> istart[m_ngroups];
     int iend[m_ngroups];
