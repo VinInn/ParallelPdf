@@ -1,9 +1,11 @@
 // compile with c++ -std=c++11 -O3 -fopenmp -lnuma testNuma.cpp
 /*
+setenv GOMP_CPU_AFFINITY '0-27'
 c++ -std=c++11 -O3 -fopenmp -lnuma testNuma.cpp
 foreach i ( 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27)
 foreach j ( 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27)
-./a.out $i $j 120 | grep time
+numactl -C 0-27 ./a.out $i $j 8 | grep time
+numactl -C 0-27 ./a.out $i $j 120 | grep time
 end
 end
 
