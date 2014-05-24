@@ -1,3 +1,4 @@
+// compile with c++ -std=c++11 -O3 -fopenmp -lnuma testNuma.cpp
 #include <numa.h>
 #include <omp.h>
 #include<iostream>
@@ -77,6 +78,6 @@ int main(int na, char * arg[]) {
 
   }
 
-  std::cout << "time " << double(t1)*1.e-6 << std::endl;
+  std::cout << "time " << one << ' ' << two << ' ' << double(t1)*1.e-6 << std::endl;
   return 0;
 }
