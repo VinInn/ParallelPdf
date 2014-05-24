@@ -90,6 +90,6 @@ int main(int na,  char * arg[]) {
 
   }
 
-  std::cout << "time " << one << ' ' << two << ' ' << double(t1)*1.e-6 << std::endl;
+  std::cout << "time " << bs << "MB "<< one << ' ' << two << ' ' << double(t1)*1.e-6 << std::endl;
   return 0;
 }
