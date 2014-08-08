@@ -1,16 +1,3 @@
-# define KNF to compile for KNF, otherwise compile for CPU only
-# Values: direct, offload
-#KNF=direct
-#KNF=offload
-
-TBB=yes
-#CEAN=yes
-#CILK=yes
-
-#MPI=mpiicpc
-#MPI=mpic++
-#TAU=yes
-
 DIR       = XEON
 
 #BITS      = -m64
@@ -25,80 +12,19 @@ INCLUDE  = -I../
 # SOLIBS   = -L../Minuit2/lib -lMinuit2 -Wl,-rpath=../Minuit2/lib
 SOLIBS = -lnuma
 
-# CXXFLAGS  = -O2 -fPIC  -march=core-avx2
-CXXFLAGS = -g -Ofast -fPIC  -march=native  -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11 -ftree-vectorizer-verbose=1 -Wall --param vect-max-version-for-alias-checks=100  -DWARNINGMSG $(OPTFLAGS)
-# -fipa-pta -fprefetch-loop-arrays
+# CXXFLAGS  = -std=gnu++11  -g -Wall -fvisibility-inlines-hidden  -O2 -fPIC  -march=nehalem 
+# -march=native -mprefer-avx128
+CXXFLAGS = -g -Ofast -fPIC  -march=native -ftree-loop-if-convert-stores -fvisibility-inlines-hidden -std=gnu++11  -fopt-info-vec  -Wall --param vect-max-version-for-alias-checks=100  -DWARNINGMSG $(OPTFLAGS)
+# -fipa-pta -fprefetch-loop-arrays -funroll-all-loops
 
 
-ifdef KNF
-CXX       = icpc
-ifeq  ($(KNF),direct)
-LDFLAGS   = -limf -lsvml -lintlc
-CXXFLAGS += -mmic -no-fma 
-#-fimf-accuracy-bits=22
-#:exp
-#CXXFLAGS += -no-vec
-INCLUDE  = -I../Minuit2/MIC/include/
-SOLIBS   = -L../Minuit2/MIC/lib -lMinuit2 -Wl,-rpath=./:../Minuit2/MIC/lib
-DIR      = MIC
-else
-CXXFLAGS  += -offload-build -opt-report-phase:offload -offload-copts:"$(INCLUDE) -vec-report=3"
-#LDFLAGS    = -offload-ldopts:"-v -Wl,-no-undefined -L/opt/intel/composerxe_mic-12.0.0.025/compiler/lib/mic -lcprts -lcxa -lunwind"
-#LDFLAGS    = -offload-ldopts:"libMainLRB.out"
-endif
-else
-#CXX       = g++
 CXX       = c++
 # Vectorization
 LDFLAGS   = -ldl
-endif
 
 INCLUDE   += -I$(PWD)
 CXXWARN   = -Wall
 OPENMP    = -fopenmp
-
-# Note: CUDA uses g++ as default compiler for the host
-ifeq ($(CXX),icpc)     
-CXXFLAGS  += -ip -vec-report1 
-#-mkl=sequential
-#-g -openmp-link dynamic
-OPENMP     = -openmp -openmp-report2
-#CXXFLAGS  += -ansi-alias
-#LDFLAGS   += -L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm
-ifdef TBB
-CXXFLAGS  += -DUSE_TBB -tbb
-LDFLAGS   += -ltbbmalloc
-endif
-ifdef CEAN
-CXXFLAGS  += -DUSE_CEAN
-endif
-ifdef CILK
-CXXFLAGS  += -DUSE_CILK 
-#-cilk-serialize
-endif
-else
-CXXFLAGS  += -ftree-vectorizer-verbose=1
-endif
-
-ifdef MPI
-CXX        = $(MPI)
-CXXFLAGS  += -DUSE_MPI
-ifeq ($(MPI),mpiicpc)
-ifndef TAU
-CXXFLAGS  += -mt_mpi
-endif
-endif
-
-ifdef TAU
-CXX        = tau_cxx.sh
-include $(TAU_MAKEFILE)
-CXXFLAGS  += -optTauCC="$(TAU_CCOMPILER) -fPIC"
-ifeq ($(MPI),mpiicpc)
-CXXFLAGS  += -DMPICH_IGNORE_CXX_SEEK
-endif
-endif
-
-endif
 
 
 MAIN    := main

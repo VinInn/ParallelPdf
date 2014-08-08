@@ -32,8 +32,9 @@ int main(int na,  char * arg[]) {
   const int one = ::atoi(arg[1]);
   const int two = ::atoi(arg[2]);
   const unsigned int bs = ::atoi(arg[3]);
+  const bool writeOnce = (na>4);
 
-  std::cout << "writing " << bs << "MB " << "in thread " << one << " read in thread " << two << std::endl;
+  std::cout << "writing " << ((writeOnce) ? " once " :"") << bs << "MB " << "in thread " << one << " read in thread " << two << std::endl;
 
   int * buffer = nullptr;
   unsigned int size = bs*1000000/4;
@@ -43,6 +44,8 @@ int main(int na,  char * arg[]) {
   long long t1=0;
 
   for (int kk=0; kk<50; ++kk) {
+
+  if (first | (!writeOnce)) {
 
 #pragma omp parallel
   {
@@ -61,6 +64,8 @@ int main(int na,  char * arg[]) {
 
   assert(buffer);
   assert(10==buffer[10]); 
+  
+  }  // writeOnce
 
 #pragma omp parallel
   {
@@ -78,8 +83,7 @@ int main(int na,  char * arg[]) {
   }
 
 
-  numa_free(buffer, size*4);
-  buffer = nullptr;
+  if (!writeOnce) { numa_free(buffer, size*4);   buffer = nullptr; }
   if (first) {
      std::cout << "sum " << sum << std::endl;
      t1=0;
