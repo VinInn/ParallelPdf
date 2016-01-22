@@ -1,5 +1,5 @@
-./main_XEON -n 400000 -b 512 -i 100
-./main_XEON -n 400000 -b 512 -i 100 -c
-./main_XEON -n 400000 -b 512 -i 100 -p
-./main_XEON -n 400000 -b 512 -i 100 -s
+./main_XEON -n 400000 -b 512 -i 200
+./main_XEON -n 400000 -b 512 -i 200 -c
+./main_XEON -n 400000 -b 512 -i 200 -p
+./main_XEON -n 400000 -b 512 -i 200 -s
 
