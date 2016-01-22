@@ -1,0 +1,5 @@
+perf stat -e task-clock -e cycles -e instructions -e stalled-cycles-frontend -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses -e L1-dcache-misses -e L1-dcache-loads ./main_XEON -n 400000 -b 512 -i 100 -s
+perf stat -e task-clock -e cycles -e instructions -e stalled-cycles-frontend -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses -e L1-dcache-misses -e L1-dcache-loads ./main_XEON -n 400000 -b 512 -i 100 -p
+perf stat -e task-clock -e cycles -e instructions -e stalled-cycles-frontend -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses -e L1-dcache-misses -e L1-dcache-loads ./main_XEON -n 400000 -b 512 -i 100 -c
+perf stat -e task-clock -e cycles -e instructions -e stalled-cycles-frontend -e stalled-cycles-backend -e cache-misses -e cache-references -e branch-misses -e L1-dcache-misses -e L1-dcache-loads ./main_XEON -n 400000 -b 512 -i 100
+
