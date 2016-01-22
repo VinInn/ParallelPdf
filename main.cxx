@@ -226,7 +226,8 @@ double DoNLL(const unsigned int Iter, const unsigned int blockSize, Data &data,
 	auto nloops = 2*nvar;
 	std::atomic<int> ok[nvar];for ( auto & o : ok) o=0;
 	std::atomic<int> alP[Data::inPart()]; for ( auto & o : alP) o=0;
-	double lval[OpenMP::GetMaxNumThreads()]={0.};
+	double lval[OpenMP::GetMaxNumThreads()]; //={0.};
+        for (int i=0; i<OpenMP::GetMaxNumThreads();++i) lval[i]=0;
 #pragma omp parallel
 	{
 	  auto par = Data::partition();
