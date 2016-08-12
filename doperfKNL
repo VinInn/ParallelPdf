@@ -1,0 +1,32 @@
+taskset -c 0-63 ~/pmu-tools/ocperf.py stat \
+-e task-clock -e cycles \
+-e rs_full_stall.all -e cycles_div_busy.all \
+-e instructions -e branch-instructions -e branch-misses \
+-e mem_uops_retired.l1_miss_loads -e mem_uops_retired.l2_miss_loads -e mem_uops_retired.l2_hit_loads \
+./main_XEON -n 600000 -b 512 -s -i 200
+
+taskset -c 0-63 ~/pmu-tools/ocperf.py stat \
+-e task-clock -e cycles \
+-e rs_full_stall.all -e cycles_div_busy.all \
+-e instructions -e branch-instructions -e branch-misses \
+-e mem_uops_retired.l1_miss_loads -e mem_uops_retired.l2_miss_loads -e mem_uops_retired.l2_hit_loads \
+./main_XEON -n 600000 -b 512 -p -i 200
+
+taskset -c 0-63 ~/pmu-tools/ocperf.py stat \
+-e task-clock -e cycles \
+-e rs_full_stall.all -e cycles_div_busy.all \
+-e instructions -e branch-instructions -e branch-misses \
+-e mem_uops_retired.l1_miss_loads -e mem_uops_retired.l2_miss_loads -e mem_uops_retired.l2_hit_loads \
+./main_XEON -n 600000 -b 512 -c -i 200
+
+taskset -c 0-63 ~/pmu-tools/ocperf.py stat \
+-e task-clock -e cycles \
+-e rs_full_stall.all -e cycles_div_busy.all \
+-e instructions -e branch-instructions -e branch-misses \
+-e mem_uops_retired.l1_miss_loads -e mem_uops_retired.l2_miss_loads -e mem_uops_retired.l2_hit_loads \
+./main_XEON -n 600000 -b 512 -i 50
+
+
+#-e frontend_retired.l1i_miss \
+#-e frontend_retired.l2_miss \
+
