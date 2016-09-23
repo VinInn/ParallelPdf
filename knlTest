@@ -1,2 +1,3 @@
 taskset -c 0-31,64-95 ~/scripts/doOCPerfK "./main_XEON -n 1200000 -b 1024 -s -i 200" & ; taskset -c 32-63,96-127 ~/scripts/doOCPerfK "./main_XEON -n 1200000 -b 1024 -s -i 200" & ;
+taskset -c 0-63 ~/scripts/doOCPerfK "./main_XEON -n 1200000 -b 1024 -s -i 200" & ; taskset -c 64-127 ~/scripts/doOCPerfK "./main_XEON -n 1200000 -b 1024 -s -i 200" & ;
 
