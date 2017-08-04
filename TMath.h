@@ -7,6 +7,7 @@
 inline void * memalign(size_t a, size_t n) { void * p=0;  posix_memalign(&p,a,n); return p;}
 #else
 #include <malloc.h>
+inline void * memalign(size_t a, size_t n) { return aligned_alloc(a,n); }
 #endif
 #ifndef ALIGNMENT
 #define ALIGNMENT 32
